@@ -1,9 +1,22 @@
 class ApiConfig {
-  // Delivery Mall API Base URL
-  // For Android Emulator: use 10.0.2.2 (emulator's special alias for host machine)
-  // For iOS Simulator: use 127.0.0.1
-  // For Physical Device: use your computer's IP address (e.g., 192.168.1.100)
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  // API Base URL Configuration
+  //
+  // CHOOSE THE RIGHT URL BASED ON WHERE YOU'RE RUNNING THE APP:
+  //
+  // 1. Android Emulator → use: 'http://10.0.2.2:8000/api'
+  // 2. iOS Simulator → use: 'http://127.0.0.1:8000/api'
+  // 3. Physical Device (same network) → use: 'http://YOUR_IP:8000/api'
+  //    Example: 'http://192.168.1.100:8000/api'
+  //    To find your IP: Run 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
+  //
+  // 4. Chrome/Web → use: 'http://127.0.0.1:8000/api'
+
+  // ⚠️ CHANGE THIS LINE based on where you're running:
+  static const String baseUrl = 'http://10.0.2.2:8000/api'; // Android Emulator
+
+  // Uncomment the line you need:
+  // static const String baseUrl = 'http://127.0.0.1:8000/api';  // iOS Simulator or Chrome
+  // static const String baseUrl = 'http://192.168.1.100:8000/api';  // Physical Device (replace with your IP)
 
   // Authentication token (will be set after login)
   static String? authToken;

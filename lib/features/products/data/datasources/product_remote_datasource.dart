@@ -36,35 +36,57 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
     double? maxPrice,
   }) async {
     try {
-      // Build query parameters
+      // Build query parameters - use dynamic to match ApiClient signature
       final Map<String, dynamic> queryParams = {
-        'page': page,
-        'per_page': perPage,
+        'page': page.toString(),
+        'per_page': perPage.toString(),
       };
 
-      if (categoryId != null) queryParams['category_id'] = categoryId;
+      if (categoryId != null)
+        queryParams['category_id'] = categoryId.toString();
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
-      if (minPrice != null) queryParams['min_price'] = minPrice;
-      if (maxPrice != null) queryParams['max_price'] = maxPrice;
+      if (minPrice != null) queryParams['min_price'] = minPrice.toString();
+      if (maxPrice != null) queryParams['max_price'] = maxPrice.toString();
 
-      // Build URL with query parameters
-      final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.productsEndpoint}')
-          .replace(
-            queryParameters: queryParams.map(
-              (key, value) => MapEntry(key, value.toString()),
-            ),
-          );
+      print(
+        '🔍 Fetching products with URL: ${ApiConfig.baseUrl}${ApiConfig.productsEndpoint}',
+      );
+      print('🔍 Query params: $queryParams');
 
-      final response = await apiClient.get(uri.toString());
+      // Call API with endpoint and query parameters
+      final response = await apiClient.get(
+        ApiConfig.productsEndpoint,
+        queryParameters: queryParams,
+      );
 
-      if (response['success'] == true) {
-        final List<dynamic> productsJson = response['data'] ?? [];
-        return productsJson.map((json) => ProductModel.fromJson(json)).toList();
+      print('✅ API Response received');
+      print('📦 Response type: ${response.runtimeType}');
+      print('📦 Response keys: ${response.keys}');
+
+      // Check if response has data
+      if (response['data'] != null) {
+        final List<dynamic> productsJson = response['data'] as List<dynamic>;
+        print('✅ Found ${productsJson.length} products in response["data"]');
+        return productsJson
+            .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+            .toList();
       }
 
-      throw ServerException('Failed to load products');
+      // If response structure is different (direct array)
+      if (response is List) {
+        print('✅ Response is direct array with ${response.length} items');
+        return (response as List<dynamic>)
+            .map((json) => ProductModel.fromJson(json as Map<String, dynamic>))
+            .toList();
+      }
+
+      print('❌ Invalid response format. Response: $response');
+      throw ServerException('Invalid response format from server');
+    } on ServerException {
+      rethrow;
     } catch (e) {
-      throw ServerException(e.toString());
+      print('Error fetching products: $e');
+      throw ServerException('Failed to fetch products: ${e.toString()}');
     }
   }
 

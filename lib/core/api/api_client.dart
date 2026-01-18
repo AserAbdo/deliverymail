@@ -19,9 +19,19 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
+      // Convert queryParameters to Map<String, String> for Uri.replace
+      Map<String, String>? stringParams;
+      if (queryParameters != null) {
+        stringParams = queryParameters.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
+      }
+
       final uri = Uri.parse(
         '$baseUrl$endpoint',
-      ).replace(queryParameters: queryParameters);
+      ).replace(queryParameters: stringParams);
+
+      print('🌐 API GET: $uri');
 
       final response = await http.get(
         uri,
@@ -30,6 +40,7 @@ class ApiClient {
 
       return _handleResponse(response);
     } catch (e) {
+      print('❌ API Error: $e');
       throw ApiException('Network error: $e');
     }
   }
