@@ -25,7 +25,9 @@ class ProductModel extends Product {
       price: (json['price'] ?? 0).toDouble(),
       unit: json['unit'] ?? json['unit_ar'] ?? 'كجم',
       imageUrl: json['image_url'] ?? json['image'] ?? '',
-      category: json['category']?['name_ar'] ?? json['category'] ?? '',
+      category: json['category'] is Map
+          ? (json['category']?['name_ar'] ?? json['category']?['name'] ?? '')
+          : (json['category']?.toString() ?? ''),
       isOrganic: json['is_organic'] == 1 || json['is_organic'] == true,
       rating: (json['rating'] ?? 4.5).toDouble(),
       reviewCount: json['review_count'] ?? json['reviews_count'] ?? 0,
