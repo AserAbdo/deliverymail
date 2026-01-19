@@ -24,7 +24,7 @@ class ProductModel extends Product {
       descriptionAr: json['description_ar'] ?? json['description'] ?? '',
       price: (json['price'] ?? 0).toDouble(),
       unit: json['unit'] ?? json['unit_ar'] ?? 'كجم',
-      imageUrl: json['image_url'] ?? json['image'] ?? '',
+      imageUrl: _buildImageUrl(json['image_url'] ?? json['image'] ?? ''),
       category: json['category'] is Map
           ? (json['category']?['name_ar'] ?? json['category']?['name'] ?? '')
           : (json['category']?.toString() ?? ''),

@@ -243,8 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           hintText: 'ابحث عن منتج...',
           hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
           border: InputBorder.none,
-          suffixIcon: Icon(Icons.search, color: Colors.grey[400]),
-          prefixIcon: Container(
+          suffixIcon: Container(
             margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -253,26 +252,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             child: const Icon(Icons.tune, color: Colors.white, size: 20),
           ),
+          prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
         ),
       ),
     );
   }
 
   Widget _buildCategories() {
-    // Reversed list so "الكل" appears on the right
-    final reversedCategories = _categories.reversed.toList();
     return SizedBox(
       height: 100,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
-        itemCount: reversedCategories.length,
+        reverse: true,
+        itemCount: _categories.length,
         itemBuilder: (context, index) {
-          // Map reversed index back to original index for selection
-          final originalIndex = _categories.length - 1 - index;
-          final isSelected = _selectedCategoryIndex == originalIndex;
+          final reversedIndex = _categories.length - 1 - index;
+          final category = _categories[reversedIndex];
+          final isSelected = _selectedCategoryIndex == reversedIndex;
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategoryIndex = originalIndex),
+            onTap: () => setState(() => _selectedCategoryIndex = reversedIndex),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -299,13 +298,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    reversedCategories[index]['icon'],
+                    category['icon'],
                     color: isSelected ? Colors.white : const Color(0xFF2E7D32),
                     size: 28,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    reversedCategories[index]['name'],
+                    category['name'],
                     style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -613,29 +612,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ),
                             ),
                           ),
-                        // Favorite Button
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.favorite_border,
-                              color: Colors.grey,
-                              size: 18,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
