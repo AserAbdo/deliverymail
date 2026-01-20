@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
+import 'package:khodargy/core/constants/api_constants.dart';
 
 /// Order Item Model
 /// موديل عنصر الطلب
@@ -22,7 +22,7 @@ class OrderItem {
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
-    final baseUrl = ApiConfig.baseUrl.replaceAll('/api', '');
+    final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
     String? imageUrl = json['product']?['image'] ?? json['product_image'];
     if (imageUrl != null && !imageUrl.startsWith('http')) {
       imageUrl = '$baseUrl${imageUrl.startsWith('/') ? '' : '/'}$imageUrl';
@@ -132,9 +132,9 @@ class OrdersService {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConfig.baseUrl}${ApiConfig.ordersEndpoint}?page=$page&per_page=$perPage',
+          '${ApiConstants.baseUrl}${ApiConstants.orders}?page=$page&per_page=$perPage',
         ),
-        headers: ApiConfig.headers,
+        headers: ApiConstants.headers,
       );
 
       if (response.statusCode == 200) {
@@ -153,8 +153,8 @@ class OrdersService {
   static Future<Order?> getOrderDetails(int orderId) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.ordersEndpoint}/$orderId'),
-        headers: ApiConfig.headers,
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.orders}/$orderId'),
+        headers: ApiConstants.headers,
       );
 
       if (response.statusCode == 200) {
@@ -186,8 +186,8 @@ class OrdersService {
       };
 
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.ordersEndpoint}'),
-        headers: ApiConfig.headers,
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.orders}'),
+        headers: ApiConstants.headers,
         body: jsonEncode(body),
       );
 
@@ -215,7 +215,7 @@ class OrdersService {
   static Future<Map<String, dynamic>> trackOrder(String phone) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.trackOrderEndpoint}'),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.trackOrder}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

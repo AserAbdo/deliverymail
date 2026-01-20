@@ -9,22 +9,38 @@ class ProductsCubit extends Cubit<ProductsState> {
 
   ProductsCubit({required this.getProducts}) : super(ProductsInitial());
 
-  /// Load all products
-  /// تحميل جميع المنتجات
-  Future<void> loadProducts({int page = 1, int perPage = 100}) async {
+  /// Load all products (optionally filtered by category)
+  /// تحميل جميع المنتجات (اختياريًا حسب الفئة)
+  Future<void> loadProducts({
+    int? categoryId,
+    int page = 1,
+    int perPage = 100,
+  }) async {
     emit(ProductsLoading());
 
-    final result = await getProducts(
-      GetProductsParams(page: page, perPage: perPage),
-    );
+    try {
+      final products = await getProducts(
+        categoryId: categoryId,
+        page: page,
+        perPage: perPage,
+      );
 
-    result.fold((failure) => emit(ProductsError(failure.message)), (products) {
       if (products.isEmpty) {
-        emit(const ProductsEmpty());
+        emit(
+          ProductsEmpty(
+            categoryId != null
+                ? 'لا توجد منتجات في هذه الفئة'
+                : 'لا توجد منتجات متاحة',
+          ),
+        );
       } else {
-        emit(ProductsLoaded(products: products));
+        emit(
+          ProductsLoaded(products: products, selectedCategoryId: categoryId),
+        );
       }
-    });
+    } catch (e) {
+      emit(ProductsError(e.toString()));
+    }
   }
 
   /// Filter products by category
@@ -32,11 +48,9 @@ class ProductsCubit extends Cubit<ProductsState> {
   Future<void> filterByCategory(int? categoryId) async {
     emit(ProductsLoading());
 
-    final result = await getProducts(
-      GetProductsParams(categoryId: categoryId, perPage: 100),
-    );
+    try {
+      final products = await getProducts(categoryId: categoryId, perPage: 100);
 
-    result.fold((failure) => emit(ProductsError(failure.message)), (products) {
       if (products.isEmpty) {
         emit(const ProductsEmpty('لا توجد منتجات في هذه الفئة'));
       } else {
@@ -44,7 +58,9 @@ class ProductsCubit extends Cubit<ProductsState> {
           ProductsLoaded(products: products, selectedCategoryId: categoryId),
         );
       }
-    });
+    } catch (e) {
+      emit(ProductsError(e.toString()));
+    }
   }
 
   /// Search products
@@ -57,17 +73,17 @@ class ProductsCubit extends Cubit<ProductsState> {
 
     emit(ProductsLoading());
 
-    final result = await getProducts(
-      GetProductsParams(search: query, perPage: 100),
-    );
+    try {
+      final products = await getProducts(search: query, perPage: 100);
 
-    result.fold((failure) => emit(ProductsError(failure.message)), (products) {
       if (products.isEmpty) {
         emit(const ProductsEmpty('لا توجد نتائج للبحث'));
       } else {
         emit(ProductsLoaded(products: products, searchQuery: query));
       }
-    });
+    } catch (e) {
+      emit(ProductsError(e.toString()));
+    }
   }
 
   /// Refresh products

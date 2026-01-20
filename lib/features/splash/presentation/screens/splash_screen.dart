@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
+import '../../../../core/constants/app_colors.dart';
 import '../../../main/presentation/screens/main_screen.dart';
 
 /// Splash Screen - Features/Splash/Presentation
 /// شاشة البداية
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -63,11 +64,11 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+            colors: [AppColors.primaryGreenLight, AppColors.primaryGreen],
           ),
         ),
         child: Center(
@@ -80,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
                 children: [
                   // App Logo
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -92,16 +93,20 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.shopping_basket,
-                      size: 80,
-                      color: Color(0xFF2E7D32),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
                   // App Name
                   Text(
-                    'خضرجي',
+                    'دليفري مول',
                     style: GoogleFonts.cairo(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,

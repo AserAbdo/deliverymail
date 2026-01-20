@@ -1,252 +1,162 @@
-# Khodargy (خضرجي) - Flutter Mobile App
+# Khodargy - تطبيق خضرجي
 
-A beautiful Arabic-language mobile app for ordering fresh vegetables and fruits, built with Flutter and connected to a Laravel backend API.
+تطبيق Flutter لمتجر الخضار والفواكه الطازجة
 
-## 📱 Features
+## 🚀 البدء
 
-- ✅ Browse products (vegetables & fruits)
-- ✅ Search products
-- ✅ Filter by category
-- ✅ Add to cart
-- ✅ Beautiful Arabic UI with RTL support
-- ✅ Real-time data from API
-- ✅ Pull-to-refresh
-- ✅ Loading and error states
-- 🔄 User authentication (coming soon)
-- 🔄 Order placement (coming soon)
-- 🔄 Order tracking (coming soon)
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-Make sure you have installed:
-- Flutter SDK (3.10.0 or higher)
+### المتطلبات الأساسية
+- Flutter SDK (3.10.0 أو أحدث)
 - Dart SDK
-- Android Studio / Xcode
-- PHP 8.1+ (for backend, with SQLite extension)
-- Composer (for backend)
+- Android Studio / VS Code
+- Laravel Backend API
 
-**Note:** No MySQL needed! Backend uses SQLite database. 🎉
+### إعداد الـ API
 
-### 1. Setup Flutter App
+1. **تشغيل الـ Backend API**
+   ```bash
+   cd path/to/backend
+   php artisan serve
+   ```
+   سيعمل الـ API على: `http://127.0.0.1:8000`
 
-```bash
-cd C:\Users\Admin\Desktop\khodargy
-flutter pub get
-```
+2. **تحديث عنوان الـ API**
+   
+   افتح الملف: `lib/core/constants/api_constants.dart`
+   
+   ```dart
+   static const String baseUrl = 'https://deliverymall.developerxsoftware.com/api';
+   ```
+   
+   **ملاحظة مهمة للأجهزة الحقيقية:**
+   - إذا كنت تختبر على جهاز حقيقي، استخدم عنوان IP الخاص بجهاز الكمبيوتر:
+     ```dart
+     static const String baseUrl = 'http://192.168.1.X:8000/api';
+     ```
+   - إذا كنت تختبر على المحاكي:
+     - Android Emulator: `http://10.0.2.2:8000/api`
+     - iOS Simulator: `http://127.0.0.1:8000/api`
 
-### 2. Setup Laravel Backend
+### تثبيت التطبيق
 
-**See detailed guide:** [LARAVEL_SETUP_GUIDE.md](./LARAVEL_SETUP_GUIDE.md)
+1. **تثبيت الحزم**
+   ```bash
+   flutter pub get
+   ```
 
-Quick steps:
-```bash
-# Clone backend repository
-git clone <BACKEND_GITHUB_URL> delivery-mall-backend
-cd delivery-mall-backend
+2. **تشغيل التطبيق**
+   ```bash
+   flutter run
+   ```
 
-# Install and setup
-composer install
-copy .env.example .env
-php artisan key:generate
+## 📱 الميزات
 
-# Create SQLite database
-type nul > database\database.sqlite
+### ✅ تم التنفيذ
+- 🎨 واجهة مستخدم حديثة وجذابة
+- 🔐 نظام تسجيل الدخول والتسجيل
+- 🛍️ عرض المنتجات
+- 📦 إدارة الطلبات
+- 👤 صفحة الملف الشخصي
+- 🎨 ألوان خضراء فاتحة ومريحة للعين
 
-# Run migrations and seeders
-php artisan migrate
-php artisan db:seed
+### 🔄 API Integration
 
-# Start server
-php artisan serve
-```
+#### Authentication
+- ✅ Register - إنشاء حساب جديد
+- ✅ Login - تسجيل الدخول
+- ✅ Logout - تسجيل الخروج
+- ✅ Get Current User - الحصول على بيانات المستخدم
 
-### 3. Configure API URL
+#### Products
+- ✅ Get All Products - الحصول على جميع المنتجات
+- ✅ Get Product Details - تفاصيل المنتج
+- ✅ Search Products - البحث عن المنتجات
+- ✅ Filter by Category - التصفية حسب الفئة
 
-Edit `lib/core/api/api_config.dart`:
+#### Orders
+- 🔄 Get My Orders - طلباتي
+- 🔄 Create Order - إنشاء طلب
+- 🔄 Get Order Details - تفاصيل الطلب
+- 🔄 Track Order - تتبع الطلب
 
-**For Android Emulator:**
+#### Categories
+- 🔄 Get All Categories - الفئات
+- 🔄 Get Category Products - منتجات الفئة
+
+#### Banners
+- 🔄 Get Active Banners - البانرات النشطة
+
+## 🎨 الألوان
+
+التطبيق يستخدم نظام ألوان موحد من ملف `lib/core/constants/app_colors.dart`:
+
 ```dart
-static const String baseUrl = 'http://10.0.2.2:8000/api';
+primaryGreen: Color(0xFF4CAF50)      // أخضر فاتح
+primaryGreenLight: Color(0xFF66BB6A) // أخضر فاتح جداً
+primaryGreenDark: Color(0xFF388E3C)  // أخضر داكن قليلاً
 ```
 
-**For Physical Device:**
-```dart
-static const String baseUrl = 'http://YOUR_COMPUTER_IP:8000/api';
-```
-
-Find your IP: `ipconfig` (Windows) or `ifconfig` (Mac/Linux)
-
-### 4. Run the App
-
-```bash
-flutter run
-```
-
-## 📚 Documentation
-
-- **[LARAVEL_SETUP_GUIDE.md](./LARAVEL_SETUP_GUIDE.md)** - Complete guide to setup Laravel backend
-- **[API_INTEGRATION_SUMMARY.md](./API_INTEGRATION_SUMMARY.md)** - Summary of API integration changes
-- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick command reference
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture overview
-
-## 🏗️ Project Structure
+## 📁 هيكل المشروع
 
 ```
 lib/
-├── main.dart                    # App entry point
 ├── core/
-│   └── api/                     # API configuration
-├── models/                      # Data models
-├── services/                    # API services
-├── screens/                     # UI screens
-├── widgets/                     # Reusable widgets
-└── data/                        # Legacy data (not used)
+│   ├── constants/
+│   │   ├── app_colors.dart       # ألوان التطبيق
+│   │   └── api_constants.dart    # ثوابت الـ API
+│   ├── network/
+│   │   └── api_client.dart       # عميل الـ API
+│   ├── services/
+│   │   └── auth_service.dart     # خدمة المصادقة
+│   └── di/
+│       └── injection_container.dart
+├── features/
+│   ├── auth/                     # المصادقة
+│   ├── products/                 # المنتجات
+│   ├── orders/                   # الطلبات
+│   ├── profile/                  # الملف الشخصي
+│   └── splash/                   # شاشة البداية
+└── main.dart
 ```
 
-## 🔌 API Endpoints
+## 🔧 استكشاف الأخطاء
 
-The app connects to these Laravel API endpoints:
+### مشاكل الاتصال بالـ API
 
-### Products
-- `GET /api/products` - List products
-- `GET /api/products/{id}` - Product details
+1. **تأكد من تشغيل الـ Backend**
+   ```bash
+   php artisan serve
+   ```
 
-### Categories
-- `GET /api/categories` - List categories
-- `GET /api/categories/{id}` - Category details
+2. **تحقق من عنوان الـ API**
+   - تأكد أن `baseUrl` في `api_constants.dart` صحيح
 
-### Orders (Authentication required)
-- `GET /api/orders` - My orders
-- `POST /api/orders` - Create order
-- `GET /api/orders/{id}` - Order details
+3. **مشاكل CORS**
+   - تأكد من إعداد CORS في Laravel backend
 
-### Authentication
-- `POST /api/register` - Register
-- `POST /api/login` - Login
-- `POST /api/logout` - Logout
-- `GET /api/user` - Current user
+4. **مشاكل SSL/HTTPS**
+   - للتطوير، استخدم HTTP بدلاً من HTTPS
 
-## 🎨 Design Features
+### مشاكل الألوان
 
-- **Modern UI** with Material Design 3
-- **Arabic Typography** using Cairo font
-- **RTL Support** for Arabic language
-- **Smooth Animations** with staggered grid
-- **Beautiful Color Scheme**:
-  - Primary: Fresh Green (#2E7D32)
-  - Secondary: Orange (#FF6F00)
-  - Tertiary: Pink (#E91E63)
+إذا لم تظهر الألوان الجديدة:
+1. أعد تشغيل التطبيق بالكامل
+2. نظف الـ build: `flutter clean && flutter pub get`
 
-## 🛠️ Technologies Used
+## 📝 ملاحظات
 
-### Flutter App
-- Flutter 3.10+
-- Dart
-- HTTP package for API calls
-- Google Fonts (Cairo)
-- Cached Network Image
-- Flutter Staggered Animations
-- Badges
+- التطبيق يدعم اللغة العربية بالكامل (RTL)
+- يستخدم Google Fonts (Cairo) للنصوص العربية
+- جميع الأزرار تم إصلاح مشكلة النص المقطوع
+- الشعار يتم تحميله من `assets/logo.png`
 
-### Backend (Laravel)
-- PHP 8.1+
-- Laravel Framework
-- MySQL Database
-- RESTful API
+## 🤝 المساهمة
 
-## 🔧 Development
+للمساهمة في المشروع:
+1. Fork المشروع
+2. أنشئ branch جديد
+3. قم بالتعديلات
+4. أرسل Pull Request
 
-### Run in Development Mode
-```bash
-# Terminal 1: Start Laravel
-cd delivery-mall-backend
-php artisan serve
+## 📄 الترخيص
 
-# Terminal 2: Run Flutter
-cd khodargy
-flutter run
-```
-
-### Hot Reload
-While the app is running:
-- Press `r` for hot reload
-- Press `R` for hot restart
-- Press `q` to quit
-
-### Build APK
-```bash
-flutter build apk
-```
-
-## 🐛 Troubleshooting
-
-### App shows "Failed to load products"
-1. Check if Laravel server is running
-2. Verify API URL in `lib/core/api/api_config.dart`
-3. Test API in browser: `http://127.0.0.1:8000/api/products`
-
-### Connection refused on physical device
-1. Use your computer's IP address (not 127.0.0.1)
-2. Start Laravel with: `php artisan serve --host=0.0.0.0`
-3. Make sure phone and computer are on same WiFi
-
-### Arabic text not showing
-1. Run `flutter pub get`
-2. Restart the app
-3. Check that `flutter_localizations` is in `pubspec.yaml`
-
-**More troubleshooting:** See [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
-
-## 📝 Recent Changes
-
-### v1.1.0 - API Integration
-- ✅ Integrated real Laravel API
-- ✅ Removed fake data
-- ✅ Added loading states
-- ✅ Added error handling
-- ✅ Added pull-to-refresh
-- ✅ Fixed Arabic localization
-
-### v1.0.0 - Initial Release
-- ✅ Basic UI with fake data
-- ✅ Product listing
-- ✅ Cart functionality
-- ✅ Search and filters
-
-## 🤝 Contributing
-
-1. Get backend repository URL from your team
-2. Follow setup guides
-3. Make changes
-4. Test thoroughly
-5. Submit pull request
-
-## 📞 Support
-
-If you encounter issues:
-1. Check the documentation files
-2. Test API endpoints in Postman
-3. Check Laravel logs: `storage/logs/laravel.log`
-4. Contact backend team for API issues
-
-## 📄 License
-
-Private project - Not for public distribution
-
----
-
-**Made with ❤️ for fresh produce delivery**
-
-## 🎯 Next Steps
-
-1. ✅ Setup Laravel backend (see LARAVEL_SETUP_GUIDE.md)
-2. ✅ Run `flutter pub get`
-3. ✅ Configure API URL for your environment
-4. ✅ Test the app
-5. 🔄 Implement authentication
-6. 🔄 Add order placement
-7. 🔄 Add order tracking
-
-**Happy Coding! 🚀**
+هذا المشروع خاص ولا يسمح باستخدامه تجارياً بدون إذن.

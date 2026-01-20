@@ -1,44 +1,28 @@
-import 'package:dartz/dartz.dart';
-import '../../../../core/error/failures.dart';
-import '../../../../core/usecases/usecase.dart';
 import '../entities/product.dart';
-import '../repositories/product_repository.dart';
+import '../repositories/products_repository.dart';
 
-/// Get Products Use Case - Domain Layer
-/// حالة استخدام: جلب المنتجات (طبقة المنطق)
-class GetProducts implements UseCase<List<Product>, GetProductsParams> {
-  final ProductRepository repository;
+/// Get Products Use Case
+/// حالة استخدام: جلب المنتجات
+class GetProducts {
+  final ProductsRepository repository;
 
   GetProducts(this.repository);
 
-  @override
-  Future<Either<Failure, List<Product>>> call(GetProductsParams params) async {
+  Future<List<Product>> call({
+    int? categoryId,
+    String? search,
+    double? minPrice,
+    double? maxPrice,
+    int page = 1,
+    int perPage = 15,
+  }) async {
     return await repository.getProducts(
-      page: params.page,
-      perPage: params.perPage,
-      categoryId: params.categoryId,
-      search: params.search,
-      minPrice: params.minPrice,
-      maxPrice: params.maxPrice,
+      categoryId: categoryId,
+      search: search,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      page: page,
+      perPage: perPage,
     );
   }
-}
-
-/// Parameters for GetProducts Use Case
-class GetProductsParams {
-  final int page;
-  final int perPage;
-  final int? categoryId;
-  final String? search;
-  final double? minPrice;
-  final double? maxPrice;
-
-  const GetProductsParams({
-    this.page = 1,
-    this.perPage = 100,
-    this.categoryId,
-    this.search,
-    this.minPrice,
-    this.maxPrice,
-  });
 }

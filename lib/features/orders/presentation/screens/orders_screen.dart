@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/orders_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -68,14 +69,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
             style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
         ),
         body: _isLoading
-            ? const Center(
+            ? Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryGreen,
+                  ),
                 ),
               )
             : !_isLoggedIn
@@ -126,7 +129,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: AppColors.primaryGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,
@@ -167,7 +170,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     icon: const Icon(Icons.search),
                     label: Text('تتبع الطلب', style: GoogleFonts.cairo()),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: AppColors.primaryGreen,
                     ),
                   ),
                 ],
@@ -221,7 +224,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: AppColors.primaryGreen,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               shape: RoundedRectangleBorder(
@@ -237,7 +240,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget _buildOrdersList() {
     return RefreshIndicator(
       onRefresh: _loadOrders,
-      color: const Color(0xFF2E7D32),
+      color: AppColors.primaryGreen,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _orders.length,
@@ -336,7 +339,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     style: GoogleFonts.cairo(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2E7D32),
+                      color: AppColors.primaryGreen,
                     ),
                   ),
                 ],
@@ -552,7 +555,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             '${item.total.toStringAsFixed(2)} ج.م',
             style: GoogleFonts.cairo(
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF2E7D32),
+              color: AppColors.primaryGreen,
             ),
           ),
         ],
@@ -646,7 +649,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: AppColors.primaryGreen,
                 foregroundColor: Colors.white,
               ),
               child: Text('بحث', style: GoogleFonts.cairo()),

@@ -1,5 +1,5 @@
 import '../../../../core/api/api_client.dart';
-import '../../../../core/api/api_config.dart';
+import '../../../../core/constants/api_constants.dart';
 import '../../../../core/error/exceptions.dart';
 import '../models/product_model.dart';
 
@@ -42,20 +42,21 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
         'per_page': perPage.toString(),
       };
 
-      if (categoryId != null)
+      if (categoryId != null) {
         queryParams['category_id'] = categoryId.toString();
+      }
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (minPrice != null) queryParams['min_price'] = minPrice.toString();
       if (maxPrice != null) queryParams['max_price'] = maxPrice.toString();
 
       print(
-        '🔍 Fetching products with URL: ${ApiConfig.baseUrl}${ApiConfig.productsEndpoint}',
+        '🔍 Fetching products with URL: ${ApiConstants.baseUrl}${ApiConstants.products}',
       );
       print('🔍 Query params: $queryParams');
 
       // Call API with endpoint and query parameters
       final response = await apiClient.get(
-        ApiConfig.productsEndpoint,
+        ApiConstants.products,
         queryParameters: queryParams,
       );
 
@@ -94,7 +95,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   Future<ProductModel> getProductDetails(String productId) async {
     try {
       final response = await apiClient.get(
-        '${ApiConfig.productsEndpoint}/$productId',
+        '${ApiConstants.products}/$productId',
       );
 
       if (response['success'] == true && response['data'] != null) {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
+import 'package:khodargy/core/constants/api_constants.dart';
 import '../../features/products/data/models/product_model.dart';
 import '../../features/products/domain/entities/product.dart';
 
@@ -23,14 +23,15 @@ class ProductsService {
         'per_page': perPage.toString(),
       };
 
-      if (categoryId != null)
+      if (categoryId != null) {
         queryParams['category_id'] = categoryId.toString();
+      }
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (minPrice != null) queryParams['min_price'] = minPrice.toString();
       if (maxPrice != null) queryParams['max_price'] = maxPrice.toString();
 
       final uri = Uri.parse(
-        '${ApiConfig.baseUrl}${ApiConfig.productsEndpoint}',
+        '${ApiConstants.baseUrl}${ApiConstants.products}',
       ).replace(queryParameters: queryParams);
 
       final response = await http.get(
@@ -64,7 +65,7 @@ class ProductsService {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConfig.baseUrl}${ApiConfig.productsEndpoint}/$productId',
+          '${ApiConstants.baseUrl}${ApiConstants.products}/$productId',
         ),
         headers: {'Accept': 'application/json'},
       );

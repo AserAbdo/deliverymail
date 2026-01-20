@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Banner;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
+import '../../../../core/services/categories_service.dart';
+import '../../../../core/services/banners_service.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
@@ -11,7 +14,7 @@ import '../../domain/entities/product.dart';
 /// Home Screen - Amazing Modern UI
 /// الشاشة الرئيسية - واجهة مستخدم حديثة ومذهلة
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -23,34 +26,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late PageController _bannerController;
   late AnimationController _fadeController;
 
-  final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.grid_view_rounded, 'name': 'الكل', 'id': null},
-    {'icon': Icons.eco, 'name': 'خضروات', 'id': 1},
-    {'icon': Icons.apple, 'name': 'فواكه', 'id': 2},
-    {'icon': Icons.grass, 'name': 'عضوي', 'id': 3},
-    {'icon': Icons.local_offer, 'name': 'عروض', 'id': 4},
-  ];
+  // Dynamic data from API
+  List<Category> _categories = [];
+  List<Banner> _banners = [];
+  bool _isLoadingCategories = true;
+  bool _isLoadingBanners = true;
 
-  final List<Map<String, dynamic>> _banners = [
-    {
-      'title': 'خصم 30%',
-      'subtitle': 'على جميع الخضروات الطازجة',
-      'gradient': [const Color(0xFF43A047), const Color(0xFF1B5E20)],
-      'icon': Icons.local_offer,
-    },
-    {
-      'title': 'توصيل مجاني',
-      'subtitle': 'للطلبات أكثر من 100 جنيه',
-      'gradient': [const Color(0xFFFF6F00), const Color(0xFFE65100)],
-      'icon': Icons.delivery_dining,
-    },
-    {
-      'title': 'منتجات عضوية',
-      'subtitle': 'طازجة من المزرعة إليك',
-      'gradient': [const Color(0xFF00897B), const Color(0xFF004D40)],
-      'icon': Icons.eco,
-    },
-  ];
+  // Static category for "All" option
+  final Category _allCategory = Category(
+    id: 0,
+    nameAr: 'الكل',
+    nameEn: 'All',
+    productsCount: 0,
+  );
 
   @override
   void initState() {
@@ -61,12 +49,56 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
     _fadeController.forward();
-    _startBannerAutoScroll();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    await Future.wait([_loadCategories(), _loadBanners()]);
+    if (_banners.isNotEmpty) {
+      _startBannerAutoScroll();
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await CategoriesService.getCategories();
+      if (mounted) {
+        setState(() {
+          _categories = [_allCategory, ...categories];
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _categories = [_allCategory];
+          _isLoadingCategories = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadBanners() async {
+    try {
+      final banners = await BannersService.getBanners();
+      if (mounted) {
+        setState(() {
+          _banners = banners;
+          _isLoadingBanners = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingBanners = false;
+        });
+      }
+    }
   }
 
   void _startBannerAutoScroll() {
     Future.delayed(const Duration(seconds: 4), () {
-      if (mounted && _bannerController.hasClients) {
+      if (mounted && _bannerController.hasClients && _banners.isNotEmpty) {
         final nextPage = (_currentBannerIndex + 1) % _banners.length;
         _bannerController.animateToPage(
           nextPage,
@@ -99,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          backgroundColor: const Color(0xFFF5F5F5),
+          backgroundColor: AppColors.background,
           body: CustomScrollView(
             slivers: [
               // Modern App Bar with Gradient
@@ -129,14 +161,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       floating: false,
       pinned: true,
       elevation: 0,
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: AppColors.primaryGreen,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
+              colors: [AppColors.primaryGreenLight, AppColors.primaryGreenDark],
             ),
           ),
           child: SafeArea(
@@ -159,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                           ),
                           Text(
-                            'خضرجي',
+                            'دليفري مول',
                             style: GoogleFonts.cairo(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -203,8 +235,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             top: 0,
             child: Container(
               padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFF6F00),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryOrange,
                 shape: BoxShape.circle,
               ),
               child: Text(
@@ -247,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32),
+              color: AppColors.primaryGreen,
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.tune, color: Colors.white, size: 20),
@@ -259,6 +291,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCategories() {
+    if (_isLoadingCategories) {
+      return SizedBox(
+        height: 100,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       height: 100,
       child: ListView.builder(
@@ -271,15 +315,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           final category = _categories[reversedIndex];
           final isSelected = _selectedCategoryIndex == reversedIndex;
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategoryIndex = reversedIndex),
+            onTap: () {
+              setState(() => _selectedCategoryIndex = reversedIndex);
+              // Filter products by category
+              if (reversedIndex == 0) {
+                // "All" category
+                context.read<ProductsCubit>().loadProducts();
+              } else {
+                context.read<ProductsCubit>().loadProducts(
+                  categoryId: category.id,
+                );
+              }
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 6),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 gradient: isSelected
-                    ? const LinearGradient(
-                        colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
+                    ? LinearGradient(
+                        colors: [
+                          AppColors.primaryGreenLight,
+                          AppColors.primaryGreen,
+                        ],
                       )
                     : null,
                 color: isSelected ? null : Colors.white,
@@ -287,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 boxShadow: [
                   BoxShadow(
                     color: isSelected
-                        ? const Color(0xFF2E7D32).withOpacity(0.4)
+                        ? AppColors.primaryGreen.withOpacity(0.4)
                         : Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
@@ -298,13 +356,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    category['icon'],
-                    color: isSelected ? Colors.white : const Color(0xFF2E7D32),
+                    _getCategoryIcon(category),
+                    color: isSelected ? Colors.white : AppColors.primaryGreen,
                     size: 28,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    category['name'],
+                    category.nameAr,
                     style: GoogleFonts.cairo(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -320,7 +378,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  IconData _getCategoryIcon(Category category) {
+    // Default icon mapping based on category name
+    final name = category.nameAr.toLowerCase();
+    if (category.id == 0) return Icons.grid_view_rounded;
+    if (name.contains('خضر')) return Icons.eco;
+    if (name.contains('فاكه') || name.contains('فواكه')) return Icons.apple;
+    if (name.contains('عضوي')) return Icons.grass;
+    if (name.contains('عرض') || name.contains('عروض')) return Icons.local_offer;
+    if (name.contains('لحوم') || name.contains('لحم')) return Icons.set_meal;
+    if (name.contains('ألبان') || name.contains('حليب')) return Icons.egg;
+    return Icons.category;
+  }
+
   Widget _buildBannerCarousel() {
+    if (_isLoadingBanners) {
+      return Container(
+        height: 160,
+        margin: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
+    if (_banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       height: 160,
       margin: const EdgeInsets.symmetric(vertical: 16),
@@ -334,80 +422,192 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 6),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: banner['gradient'],
-              ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: (banner['gradient'][0] as Color).withOpacity(0.4),
+                  color: AppColors.primaryGreen.withOpacity(0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  left: -30,
-                  bottom: -30,
-                  child: Icon(
-                    banner['icon'],
-                    size: 150,
-                    color: Colors.white.withOpacity(0.15),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Banner Image
+                  CachedNetworkImage(
+                    imageUrl: banner.image,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryGreenLight,
+                            AppColors.primaryGreenDark,
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primaryGreenLight,
+                            AppColors.primaryGreenDark,
+                          ],
+                        ),
+                      ),
+                      child: _buildFallbackBannerContent(banner),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        banner['title'],
-                        style: GoogleFonts.cairo(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  // Gradient Overlay
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.black.withOpacity(0.6),
+                            Colors.transparent,
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        banner['subtitle'],
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'تسوق الآن',
+                    ),
+                  ),
+                  // Banner Content
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          banner.title,
                           style: GoogleFonts.cairo(
-                            fontSize: 12,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: banner['gradient'][1],
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (banner.subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            banner.subtitle!,
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'تسوق الآن',
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryGreen,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFallbackBannerContent(Banner banner) {
+    return Stack(
+      children: [
+        Positioned(
+          left: -30,
+          bottom: -30,
+          child: Icon(
+            Icons.local_offer,
+            size: 150,
+            color: Colors.white.withOpacity(0.15),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                banner.title,
+                style: GoogleFonts.cairo(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              if (banner.subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  banner.subtitle!,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'تسوق الآن',
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -430,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Text(
               'عرض الكل',
               style: GoogleFonts.cairo(
-                color: const Color(0xFF2E7D32),
+                color: AppColors.primaryGreen,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -447,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.message, style: GoogleFonts.cairo()),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -463,9 +663,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(
+                  CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF2E7D32),
+                      AppColors.primaryGreen,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -553,11 +753,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
                               color: Colors.grey[100],
-                              child: const Center(
+                              child: Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF2E7D32),
+                                    AppColors.primaryGreen,
                                   ),
                                 ),
                               ),
@@ -583,10 +783,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   colors: [
-                                    Color(0xFF43A047),
-                                    Color(0xFF2E7D32),
+                                    AppColors.primaryGreenLight,
+                                    AppColors.primaryGreen,
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(20),
@@ -670,18 +870,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF43A047),
-                                      Color(0xFF2E7D32),
+                                      AppColors.primaryGreenLight,
+                                      AppColors.primaryGreen,
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(
-                                        0xFF2E7D32,
-                                      ).withOpacity(0.4),
+                                      color: AppColors.primaryGreen.withOpacity(
+                                        0.4,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 4),
                                     ),
@@ -702,9 +902,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           'تمت الإضافة إلى السلة ✓',
                                           style: GoogleFonts.cairo(),
                                         ),
-                                        backgroundColor: const Color(
-                                          0xFF2E7D32,
-                                        ),
+                                        backgroundColor: AppColors.primaryGreen,
                                         behavior: SnackBarBehavior.floating,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -726,7 +924,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     style: GoogleFonts.cairo(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF2E7D32),
+                                      color: AppColors.primaryGreen,
                                     ),
                                   ),
                                   Text(
@@ -783,7 +981,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             icon: const Icon(Icons.refresh),
             label: Text('إعادة المحاولة', style: GoogleFonts.cairo()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: AppColors.primaryGreen,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               shape: RoundedRectangleBorder(

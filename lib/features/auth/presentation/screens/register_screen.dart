@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../main/presentation/screens/main_screen.dart';
 
@@ -53,7 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message'], style: GoogleFonts.cairo()),
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: AppColors.primaryGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -80,11 +81,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
+              colors: [AppColors.primaryGreenLight, AppColors.primaryGreen],
             ),
           ),
           child: SafeArea(
@@ -145,17 +146,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'الاسم الكامل',
                                 labelStyle: GoogleFonts.cairo(),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.person_outline,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.primaryGreen,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2E7D32),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryGreen,
                                     width: 2,
                                   ),
                                 ),
@@ -178,17 +179,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'البريد الإلكتروني',
                                 labelStyle: GoogleFonts.cairo(),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.email_outlined,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.primaryGreen,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2E7D32),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryGreen,
                                     width: 2,
                                   ),
                                 ),
@@ -214,17 +215,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'رقم الهاتف (اختياري)',
                                 labelStyle: GoogleFonts.cairo(),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.phone_outlined,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.primaryGreen,
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2E7D32),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryGreen,
                                     width: 2,
                                   ),
                                 ),
@@ -241,9 +242,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'كلمة المرور',
                                 labelStyle: GoogleFonts.cairo(),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.primaryGreen,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -261,8 +262,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2E7D32),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryGreen,
                                     width: 2,
                                   ),
                                 ),
@@ -288,9 +289,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               decoration: InputDecoration(
                                 labelText: 'تأكيد كلمة المرور',
                                 labelStyle: GoogleFonts.cairo(),
-                                prefixIcon: const Icon(
+                                prefixIcon: Icon(
                                   Icons.lock_outline,
-                                  color: Color(0xFF2E7D32),
+                                  color: AppColors.primaryGreen,
                                 ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -309,8 +310,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2E7D32),
+                                  borderSide: BorderSide(
+                                    color: AppColors.primaryGreen,
                                     width: 2,
                                   ),
                                 ),
@@ -330,16 +331,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             // Register Button
                             SizedBox(
                               width: double.infinity,
-                              height: 54,
+                              height: 60,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _register,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2E7D32),
+                                  backgroundColor: AppColors.primaryGreen,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
@@ -355,6 +359,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         style: GoogleFonts.cairo(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
+                                          height: 1.5,
                                         ),
                                       ),
                               ),

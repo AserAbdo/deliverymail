@@ -1,5 +1,5 @@
 import '../../domain/entities/product.dart';
-import '../../../../core/api/api_config.dart';
+import '../../../../core/constants/api_constants.dart';
 
 /// Product Model - Data Layer
 /// نموذج المنتج (طبقة البيانات) - يحتوي على fromJson/toJson
@@ -22,7 +22,7 @@ class ProductModel extends Product {
     if (imagePath.isEmpty) return '';
     if (imagePath.startsWith('http')) return imagePath;
     // Get base URL without /api suffix
-    final baseUrl = ApiConfig.baseUrl.replaceAll('/api', '');
+    final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
     // Ensure path starts with /
     final path = imagePath.startsWith('/') ? imagePath : '/$imagePath';
     return '$baseUrl$path';

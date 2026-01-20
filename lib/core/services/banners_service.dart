@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
+import '../constants/api_constants.dart';
 
 /// Banner Model
 /// موديل البانر
@@ -24,7 +24,7 @@ class Banner {
   });
 
   factory Banner.fromJson(Map<String, dynamic> json) {
-    final baseUrl = ApiConfig.baseUrl.replaceAll('/api', '');
+    final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
     String imageUrl = json['image'] ?? json['image_url'] ?? '';
     if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
       imageUrl = '$baseUrl${imageUrl.startsWith('/') ? '' : '/'}$imageUrl';
@@ -50,7 +50,7 @@ class BannersService {
   static Future<List<Banner>> getBanners() async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.bannersEndpoint}'),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.banners}'),
         headers: {'Accept': 'application/json'},
       );
 

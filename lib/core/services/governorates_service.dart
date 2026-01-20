@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
+import 'package:khodargy/core/constants/api_constants.dart';
 
 /// Governorate Model
 /// موديل المحافظة
@@ -38,7 +38,7 @@ class GovernoratesService {
   static Future<List<Governorate>> getGovernorates() async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.governoratesEndpoint}'),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.governorates}'),
         headers: {'Accept': 'application/json'},
       );
 

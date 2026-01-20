@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'core/constants/app_colors.dart';
 import 'core/di/injection_container.dart' as di;
 import 'features/splash/presentation/screens/splash_screen.dart';
 
@@ -16,7 +17,7 @@ class KhodargyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'خضرجي - متجر الخضار والفواكه',
+      title: 'دليفري مول - متجر الخضار والفواكه',
       debugShowCheckedModeBanner: false,
 
       // RTL support for Arabic
@@ -33,11 +34,11 @@ class KhodargyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32), // Fresh green
+          seedColor: AppColors.primaryGreen,
           brightness: Brightness.light,
-          primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFFFF6F00), // Orange accent
-          tertiary: const Color(0xFFE91E63), // Pink for fruits
+          primary: AppColors.primaryGreen,
+          secondary: AppColors.secondaryOrange,
+          tertiary: AppColors.secondaryPink,
         ),
 
         // Beautiful Arabic typography
@@ -47,11 +48,11 @@ class KhodargyApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
           backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF2E7D32),
+          foregroundColor: AppColors.primaryGreen,
           titleTextStyle: GoogleFonts.cairo(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF2E7D32),
+            color: AppColors.primaryGreen,
           ),
         ),
 

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
+import 'package:khodargy/core/constants/api_constants.dart';
 
 /// Category Model
 /// موديل الفئة
@@ -24,7 +24,7 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
-    final baseUrl = ApiConfig.baseUrl.replaceAll('/api', '');
+    final baseUrl = ApiConstants.baseUrl.replaceAll('/api', '');
     String? imageUrl = json['image'] ?? json['image_url'];
     if (imageUrl != null && !imageUrl.startsWith('http')) {
       imageUrl = '$baseUrl${imageUrl.startsWith('/') ? '' : '/'}$imageUrl';
@@ -50,7 +50,7 @@ class CategoriesService {
   static Future<List<Category>> getCategories() async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.categoriesEndpoint}'),
+        Uri.parse('${ApiConstants.baseUrl}${ApiConstants.categories}'),
         headers: {'Accept': 'application/json'},
       );
 
@@ -73,7 +73,7 @@ class CategoriesService {
     try {
       final response = await http.get(
         Uri.parse(
-          '${ApiConfig.baseUrl}${ApiConfig.categoriesEndpoint}/$categoryId',
+          '${ApiConstants.baseUrl}${ApiConstants.categories}/$categoryId',
         ),
         headers: {'Accept': 'application/json'},
       );

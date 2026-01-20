@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 
 /// Profile Screen
 /// شاشة الحساب الشخصي
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -93,9 +94,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F5F5),
         body: _isLoading
-            ? const Center(
+            ? Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryGreen,
+                  ),
                 ),
               )
             : _isLoggedIn
@@ -112,14 +115,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SliverAppBar(
           expandedHeight: 200,
           pinned: true,
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: AppColors.primaryGreen,
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
+                  colors: [AppColors.primaryGreenLight, AppColors.primaryGreen],
                 ),
               ),
               child: Center(
@@ -174,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Login Button
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 60,
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       await Navigator.push(
@@ -189,14 +192,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        height: 1.5,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
+                      backgroundColor: AppColors.primaryGreen,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -247,10 +252,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.1),
+              color: AppColors.primaryGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF2E7D32)),
+            child: Icon(icon, color: AppColors.primaryGreen),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -267,7 +272,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildLoggedInView() {
     final userName = _user?['name'] ?? 'المستخدم';
     final userEmail = _user?['email'] ?? '';
-    final userPhone = _user?['phone'] ?? '';
 
     return CustomScrollView(
       slivers: [
@@ -275,14 +279,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SliverAppBar(
           expandedHeight: 220,
           pinned: true,
-          backgroundColor: const Color(0xFF2E7D32),
+          backgroundColor: AppColors.primaryGreen,
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
+                  colors: [AppColors.primaryGreenLight, AppColors.primaryGreen],
                 ),
               ),
               child: SafeArea(
@@ -305,9 +309,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: CircleAvatar(
                           radius: 45,
-                          backgroundColor: const Color(
-                            0xFF2E7D32,
-                          ).withOpacity(0.1),
+                          backgroundColor: AppColors.primaryGreen.withOpacity(
+                            0.1,
+                          ),
                           child: Text(
                             userName.isNotEmpty
                                 ? userName[0].toUpperCase()
@@ -315,7 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF2E7D32),
+                              color: AppColors.primaryGreen,
                             ),
                           ),
                         ),
@@ -391,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.cairo(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        height: 1.5,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -446,10 +451,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFF2E7D32).withOpacity(0.1),
+            color: AppColors.primaryGreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: const Color(0xFF2E7D32), size: 22),
+          child: Icon(icon, color: AppColors.primaryGreen, size: 22),
         ),
         title: Text(title, style: GoogleFonts.cairo(fontSize: 15)),
         trailing: const Icon(

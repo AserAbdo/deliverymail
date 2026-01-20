@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:khodargy/core/constants/app_colors.dart';
 import 'package:khodargy/features/products/presentation/screens/home_screen.dart';
 import 'package:khodargy/features/profile/presentation/screens/profile_screen.dart';
 import 'package:khodargy/features/orders/presentation/screens/orders_screen.dart';
+import 'package:khodargy/features/categories/presentation/screens/categories_screen.dart';
 
 /// Main Screen with Bottom Navigation
 /// الشاشة الرئيسية مع شريط التنقل السفلي
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -18,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('الأقسام')), // Categories - to be created
+    const CategoriesScreen(), // Categories Screen - الأقسام
     const OrdersScreen(), // Orders Screen
     const ProfileScreen(), // Profile Screen
   ];
@@ -47,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF2E7D32),
+          selectedItemColor: AppColors.primaryGreen,
           unselectedItemColor: Colors.grey,
           selectedLabelStyle: GoogleFonts.cairo(
             fontSize: 12,
