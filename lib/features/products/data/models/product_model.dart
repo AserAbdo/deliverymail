@@ -1,4 +1,5 @@
 import '../../domain/entities/product.dart';
+import '../../../../core/api/api_config.dart';
 
 /// Product Model - Data Layer
 /// نموذج المنتج (طبقة البيانات) - يحتوي على fromJson/toJson
@@ -15,6 +16,17 @@ class ProductModel extends Product {
     super.rating,
     super.reviewCount,
   });
+
+  /// Build full image URL from relative or absolute path
+  static String _buildImageUrl(String imagePath) {
+    if (imagePath.isEmpty) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    // Get base URL without /api suffix
+    final baseUrl = ApiConfig.baseUrl.replaceAll('/api', '');
+    // Ensure path starts with /
+    final path = imagePath.startsWith('/') ? imagePath : '/$imagePath';
+    return '$baseUrl$path';
+  }
 
   /// Create ProductModel from JSON
   factory ProductModel.fromJson(Map<String, dynamic> json) {

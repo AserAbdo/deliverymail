@@ -24,11 +24,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _fadeController;
 
   final List<Map<String, dynamic>> _categories = [
-    {'icon': Icons.grid_view_rounded, 'name': 'الكل'},
-    {'icon': Icons.eco, 'name': 'خضروات'},
-    {'icon': Icons.apple, 'name': 'فواكه'},
-    {'icon': Icons.grass, 'name': 'عضوي'},
-    {'icon': Icons.local_offer, 'name': 'عروض'},
+    {'icon': Icons.grid_view_rounded, 'name': 'الكل', 'id': null},
+    {'icon': Icons.eco, 'name': 'خضروات', 'id': 1},
+    {'icon': Icons.apple, 'name': 'فواكه', 'id': 2},
+    {'icon': Icons.grass, 'name': 'عضوي', 'id': 3},
+    {'icon': Icons.local_offer, 'name': 'عروض', 'id': 4},
   ];
 
   final List<Map<String, dynamic>> _banners = [

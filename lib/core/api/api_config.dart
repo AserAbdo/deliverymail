@@ -12,7 +12,8 @@ class ApiConfig {
   // 4. Chrome/Web → use: 'http://127.0.0.1:8000/api'
 
   // ⚠️ CHANGE THIS LINE based on where you're running:
-  static const String baseUrl = 'http://192.168.8.39:8000/api'; // Computer's IP
+  static const String baseUrl =
+      'https://deliverymail.developexsoftware.com/api'; // Production Server
 
   // Uncomment the line you need:
   // static const String baseUrl = 'http://127.0.0.1:8000/api';  // iOS Simulator or Chrome

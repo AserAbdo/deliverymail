@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:khodargy/features/products/presentation/screens/home_screen.dart';
+import 'package:khodargy/features/profile/presentation/screens/profile_screen.dart';
+import 'package:khodargy/features/orders/presentation/screens/orders_screen.dart';
 
 /// Main Screen with Bottom Navigation
 /// الشاشة الرئيسية مع شريط التنقل السفلي
@@ -17,8 +19,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const Center(child: Text('الأقسام')), // Categories - to be created
-    const Center(child: Text('طلباتي')), // Orders - to be created
-    const Center(child: Text('حسابي')), // Profile - to be created
+    const OrdersScreen(), // Orders Screen
+    const ProfileScreen(), // Profile Screen
   ];
 
   void _onItemTapped(int index) {
