@@ -202,9 +202,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       Row(
                         children: [
-                          _buildHeaderIcon(Icons.notifications_outlined, '3'),
+                          _buildHeaderIcon(Icons.notifications_outlined),
                           const SizedBox(width: 12),
-                          _buildHeaderIcon(Icons.shopping_cart_outlined, '2'),
+                          _buildHeaderIcon(Icons.shopping_cart_outlined),
                         ],
                       ),
                     ],
@@ -218,38 +218,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeaderIcon(IconData icon, String badge) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: Colors.white, size: 24),
-        ),
-        if (badge.isNotEmpty)
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.secondaryOrange,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                badge,
-                style: GoogleFonts.cairo(
-                  fontSize: 10,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-      ],
+  Widget _buildHeaderIcon(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: Colors.white, size: 24),
     );
   }
 
