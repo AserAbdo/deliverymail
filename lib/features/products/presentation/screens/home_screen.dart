@@ -8,6 +8,8 @@ import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/categories_service.dart';
 import '../../../../core/services/banners_service.dart';
 import '../../../../core/services/governorates_service.dart';
+import '../../../../core/services/cart_service.dart';
+import '../../../cart/presentation/screens/cart_screen.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
@@ -30,6 +32,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Search
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // Cart
+  final CartService _cartService = CartService();
 
   // Dynamic data from API
   List<Category> _categories = [];
@@ -60,6 +65,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     // Listen to search changes
     _searchController.addListener(_onSearchChanged);
+
+    // Listen to cart changes
+    _cartService.addListener(_onCartChanged);
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadInitialData() async {
@@ -167,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _bannerController.dispose();
     _fadeController.dispose();
     _searchController.dispose();
+    _cartService.removeListener(_onCartChanged);
     super.dispose();
   }
 
@@ -261,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         children: [
                           _buildHeaderIcon(Icons.notifications_outlined),
                           const SizedBox(width: 12),
-                          _buildHeaderIcon(Icons.shopping_cart_outlined),
+                          _buildCartIcon(),
                         ],
                       ),
                     ],
@@ -454,6 +467,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: AppColors.primaryGreen, size: 24),
+    );
+  }
+
+  Widget _buildCartIcon() {
+    final cartCount = _cartService.itemCount;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CartScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Icons.shopping_cart_outlined,
+              color: AppColors.primaryGreen,
+              size: 24,
+            ),
+            if (cartCount > 0)
+              Positioned(
+                right: -8,
+                top: -8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    cartCount > 99 ? '99+' : '$cartCount',
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
