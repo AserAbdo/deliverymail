@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/categories_service.dart';
 import '../../../../core/services/banners_service.dart';
+import '../../../../core/services/governorates_service.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
@@ -26,9 +27,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late PageController _bannerController;
   late AnimationController _fadeController;
 
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   // Dynamic data from API
   List<Category> _categories = [];
   List<Banner> _banners = [];
+  List<Governorate> _governorates = [];
+  Governorate? _selectedGovernorate;
   bool _isLoadingCategories = true;
   bool _isLoadingBanners = true;
 
@@ -50,10 +57,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
     _fadeController.forward();
     _loadInitialData();
+
+    // Listen to search changes
+    _searchController.addListener(_onSearchChanged);
   }
 
   Future<void> _loadInitialData() async {
-    await Future.wait([_loadCategories(), _loadBanners()]);
+    await Future.wait([_loadCategories(), _loadBanners(), _loadGovernorates()]);
     if (_banners.isNotEmpty) {
       _startBannerAutoScroll();
     }
@@ -96,6 +106,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadGovernorates() async {
+    try {
+      final governorates = await GovernoratesService.getGovernorates();
+      if (mounted) {
+        setState(() {
+          _governorates = governorates;
+        });
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    if (query != _searchQuery) {
+      _searchQuery = query;
+      _performSearch();
+    }
+  }
+
+  void _performSearch() {
+    final cubit = context.read<ProductsCubit>();
+    if (_searchQuery.isEmpty) {
+      // Load all products or by selected category
+      if (_selectedCategoryIndex == 0) {
+        cubit.loadProducts();
+      } else {
+        cubit.loadProducts(categoryId: _categories[_selectedCategoryIndex].id);
+      }
+    } else {
+      // Search with query
+      cubit.searchProducts(_searchQuery);
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchQuery = '';
+    _performSearch();
+  }
+
   void _startBannerAutoScroll() {
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted && _bannerController.hasClients && _banners.isNotEmpty) {
@@ -114,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void dispose() {
     _bannerController.dispose();
     _fadeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -156,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 160,
+      expandedHeight: 155,
       floating: false,
       pinned: true,
       elevation: 0,
@@ -213,45 +266,81 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
                   // Search Bar
                   Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    height: 50,
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!, width: 1),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.search, color: Colors.grey[500], size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            textDirection: TextDirection.rtl,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: 'ابحث عن منتج...',
-                              hintStyle: GoogleFonts.cairo(
-                                color: Colors.grey[500],
-                                fontSize: 14,
+                        // Menu Button (3 dots) - Opens Governorate Selection
+                        GestureDetector(
+                          onTap: _showGovernorateDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                left: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 1,
+                                ),
                               ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
+                            ),
+                            child: Icon(
+                              Icons.more_vert,
+                              color: Colors.grey[600],
+                              size: 22,
                             ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryGreen,
-                            borderRadius: BorderRadius.circular(8),
+                        // Clear button (X) - show when there's text
+                        if (_searchController.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: _clearSearch,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.close,
+                                color: Colors.grey[600],
+                                size: 20,
+                              ),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.tune,
-                            color: Colors.white,
-                            size: 18,
+                        // Search Input
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            decoration: InputDecoration(
+                              hintText: 'ابحث باي طريقه ---- بحث ذكي',
+                              hintStyle: GoogleFonts.cairo(
+                                color: Colors.grey[400],
+                                fontSize: 13,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                            ),
+                            style: GoogleFonts.cairo(fontSize: 14),
+                          ),
+                        ),
+                        // Search Icon
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Icon(
+                            Icons.search,
+                            color: Colors.grey[600],
+                            size: 22,
                           ),
                         ),
                       ],
@@ -261,6 +350,89 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showGovernorateDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.primaryGreen,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'اختر المحافظة',
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ..._governorates.map(
+              (gov) => ListTile(
+                onTap: () {
+                  setState(() {
+                    _selectedGovernorate = gov;
+                  });
+                  Navigator.pop(context);
+                },
+                leading: _selectedGovernorate?.id == gov.id
+                    ? Icon(Icons.check, color: AppColors.primaryGreen)
+                    : null,
+                title: Text(
+                  gov.nameAr,
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    color: _selectedGovernorate?.id == gov.id
+                        ? AppColors.primaryGreen
+                        : Colors.grey[800],
+                    fontWeight: _selectedGovernorate?.id == gov.id
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: _selectedGovernorate?.id == gov.id
+                      ? BorderSide(
+                          color: AppColors.primaryGreen.withOpacity(0.3),
+                        )
+                      : BorderSide.none,
+                ),
+                tileColor: _selectedGovernorate?.id == gov.id
+                    ? AppColors.primaryGreen.withOpacity(0.1)
+                    : null,
+              ),
+            ),
+            if (_governorates.isEmpty)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    'جاري تحميل المحافظات...',
+                    style: GoogleFonts.cairo(color: Colors.grey),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
