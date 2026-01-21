@@ -122,7 +122,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
+        statusBarIconBrightness:
+            Brightness.dark, // Dark icons for white app bar
       ),
     );
 
@@ -134,14 +135,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           backgroundColor: AppColors.background,
           body: CustomScrollView(
             slivers: [
-              // Modern App Bar with Gradient
+              // Modern App Bar with Search
               _buildSliverAppBar(),
-              // Search Bar
-              SliverToBoxAdapter(child: _buildSearchBar()),
-              // Categories
-              SliverToBoxAdapter(child: _buildCategories()),
               // Banner Carousel
               SliverToBoxAdapter(child: _buildBannerCarousel()),
+              // Categories (now under banner)
+              SliverToBoxAdapter(child: _buildCategories()),
               // Section Title
               SliverToBoxAdapter(child: _buildSectionTitle()),
               // Products Grid
@@ -157,26 +156,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 160,
       floating: false,
       pinned: true,
       elevation: 0,
-      backgroundColor: AppColors.primaryGreen,
+      backgroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primaryGreenLight, AppColors.primaryGreenDark],
-            ),
-          ),
+          color: Colors.white,
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header Row: Logo + Icons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -187,15 +181,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             'مرحباً بك 👋',
                             style: GoogleFonts.cairo(
                               fontSize: 14,
-                              color: Colors.white70,
+                              color: Colors.grey[600],
                             ),
                           ),
-                          Text(
-                            'دليفري مول',
-                            style: GoogleFonts.cairo(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                          ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Color(0xFF2E7D32), // Dark green (left)
+                                Color(0xFFFF9800), // Orange (right)
+                              ],
+                            ).createShader(bounds),
+                            child: Text(
+                              'دليفري مول',
+                              style: GoogleFonts.cairo(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ],
@@ -208,6 +212,50 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Search Bar
+                  Container(
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, color: Colors.grey[500], size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.right,
+                            decoration: InputDecoration(
+                              hintText: 'ابحث عن منتج...',
+                              hintStyle: GoogleFonts.cairo(
+                                color: Colors.grey[500],
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGreen,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.tune,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -222,47 +270,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: Colors.white, size: 24),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: TextField(
-        textDirection: TextDirection.rtl,
-        textAlign: TextAlign.right,
-        decoration: InputDecoration(
-          hintText: 'ابحث عن منتج...',
-          hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
-          border: InputBorder.none,
-          suffixIcon: Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.tune, color: Colors.white, size: 20),
-          ),
-          prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-        ),
-      ),
+      child: Icon(icon, color: AppColors.primaryGreen, size: 24),
     );
   }
 
@@ -284,17 +295,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
-        reverse: true,
+        reverse: false, // Start from right side (RTL)
         itemCount: _categories.length,
         itemBuilder: (context, index) {
-          final reversedIndex = _categories.length - 1 - index;
-          final category = _categories[reversedIndex];
-          final isSelected = _selectedCategoryIndex == reversedIndex;
+          // Since reverse is true, index 0 appears on the right
+          // So we use index directly (الكل is at index 0, appears on right)
+          final category = _categories[index];
+          final isSelected = _selectedCategoryIndex == index;
           return GestureDetector(
             onTap: () {
-              setState(() => _selectedCategoryIndex = reversedIndex);
+              setState(() => _selectedCategoryIndex = index);
               // Filter products by category
-              if (reversedIndex == 0) {
+              if (index == 0) {
                 // "All" category
                 context.read<ProductsCubit>().loadProducts();
               } else {

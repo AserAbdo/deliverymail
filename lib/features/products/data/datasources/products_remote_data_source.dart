@@ -46,14 +46,27 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
         queryParameters: queryParams,
       );
 
-      if (response['success'] == true) {
-        final data = response['data'];
-        final productsJson = data['data'] as List? ?? data as List;
+      // Handle both response formats:
+      // 1. Laravel paginated: {data: [...], links: {...}, meta: {...}}
+      // 2. Success wrapper: {success: true, data: {...}}
+      List<dynamic> productsJson;
 
-        return productsJson.map((json) => _productFromJson(json)).toList();
+      if (response.containsKey('data')) {
+        final data = response['data'];
+        // If data is a list, use it directly (paginated response)
+        if (data is List) {
+          productsJson = data;
+        } else if (data is Map && data.containsKey('data')) {
+          // Nested data structure
+          productsJson = data['data'] as List? ?? [];
+        } else {
+          productsJson = [];
+        }
+      } else {
+        productsJson = [];
       }
 
-      return [];
+      return productsJson.map((json) => _productFromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to load products: $e');
     }
@@ -64,7 +77,10 @@ class ProductsRemoteDataSourceImpl implements ProductsRemoteDataSource {
     try {
       final response = await apiClient.get(ApiConstants.productDetails(id));
 
-      if (response['success'] == true) {
+      // Handle both formats:
+      // 1. Direct data: {data: {...}}
+      // 2. Success wrapper: {success: true, data: {...}}
+      if (response.containsKey('data')) {
         return _productFromJson(response['data']);
       }
 

@@ -104,13 +104,23 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // App Name
-                  Text(
-                    'دليفري مول',
-                    style: GoogleFonts.cairo(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  // App Name with Gradient
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFF2E7D32), // Dark green (left)
+                        Color(0xFFFF9800), // Orange (right)
+                      ],
+                    ).createShader(bounds),
+                    child: Text(
+                      'دليفري مول',
+                      style: GoogleFonts.cairo(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
