@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart' hide Banner;
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../widgets/widgets.dart';
 import '../../domain/entities/product.dart';
+import 'product_details_screen.dart';
 
 /// Home Screen - Amazing Modern UI
 /// الشاشة الرئيسية - واجهة مستخدم حديثة ومذهلة
@@ -33,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // Search
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounceTimer;
 
   // Cart
   final CartService _cartService = CartService();
@@ -133,11 +136,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.trim();
-    if (query != _searchQuery) {
-      _searchQuery = query;
-      _performSearch();
-    }
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Debounce search - wait 500ms after user stops typing
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      final query = _searchController.text.trim();
+      if (query != _searchQuery) {
+        _searchQuery = query;
+        _performSearch();
+      }
+    });
   }
 
   void _performSearch() {
@@ -150,12 +159,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         cubit.loadProducts(categoryId: _categories[_selectedCategoryIndex].id);
       }
     } else {
-      // Search with query
+      // Search with query via API
       cubit.searchProducts(_searchQuery);
     }
   }
 
   void _clearSearch() {
+    _debounceTimer?.cancel();
     _searchController.clear();
     _searchQuery = '';
     _performSearch();
@@ -180,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _bannerController.dispose();
     _fadeController.dispose();
     _searchController.dispose();
+    _debounceTimer?.cancel();
     _cartService.removeListener(_onCartChanged);
     super.dispose();
   }
@@ -884,7 +895,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                // TODO: Navigate to product details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ProductDetailsScreen(product: product),
+                  ),
+                );
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/services/cart_service.dart';
 import '../../domain/entities/product.dart';
 
 /// Product Card Widget
 /// بطاقة المنتج
 class ProductCard extends StatelessWidget {
   final Product product;
+  final VoidCallback? onAddToCart;
 
-  const ProductCard({super.key, required this.product});
+  const ProductCard({super.key, required this.product, this.onAddToCart});
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +167,23 @@ class ProductCard extends StatelessWidget {
                               size: 20,
                             ),
                             onPressed: () {
-                              // TODO: Add to cart
+                              if (onAddToCart != null) {
+                                onAddToCart!();
+                              } else {
+                                // Default behavior: add to cart using CartService
+                                CartService().addToCart(product);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'تمت الإضافة إلى السلة ✓',
+                                      style: GoogleFonts.cairo(),
+                                    ),
+                                    backgroundColor: const Color(0xFF2E7D32),
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ),
