@@ -200,7 +200,7 @@ class OrderService {
   static Future<List<Order>> getOrdersByPhone(String phone) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/orders'),
+        Uri.parse('${ApiConstants.baseUrl}/orders/track'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',

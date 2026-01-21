@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/services/orders_service.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../../core/services/order_service.dart';
+import '../../../../core/services/settings_service.dart';
 
 /// Orders Screen
 /// شاشة الطلبات
@@ -15,46 +15,56 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  bool _isLoggedIn = false;
   bool _isLoading = true;
+  bool _hasPhone = false;
   List<Order> _orders = [];
-  String? _error;
+  String _currencySymbol = 'ج.م';
+  final _phoneController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _checkLoginAndLoadOrders();
+    _loadData();
   }
 
-  Future<void> _checkLoginAndLoadOrders() async {
-    final isLoggedIn = await AuthService.isLoggedIn();
-    setState(() => _isLoggedIn = isLoggedIn);
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
 
-    if (isLoggedIn) {
-      await _loadOrders();
+  Future<void> _loadData() async {
+    final savedPhone = await OrderService.getSavedPhoneNumber();
+    final currency = await SettingsService.getCurrencySymbol();
+
+    setState(() {
+      _currencySymbol = currency;
+      if (savedPhone != null && savedPhone.isNotEmpty) {
+        _phoneController.text = savedPhone;
+        _hasPhone = true;
+      }
+    });
+
+    if (savedPhone != null && savedPhone.isNotEmpty) {
+      await _searchOrders(savedPhone);
     } else {
       setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _loadOrders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _searchOrders(String phone) async {
+    if (phone.isEmpty) return;
 
-    try {
-      final orders = await OrdersService.getMyOrders();
-      setState(() {
-        _orders = orders;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'حدث خطأ في تحميل الطلبات';
-        _isLoading = false;
-      });
-    }
+    setState(() => _isLoading = true);
+
+    final orders = await OrderService.getOrdersByPhone(phone);
+    await OrderService.savePhoneNumber(phone);
+
+    setState(() {
+      _orders = orders;
+      _hasPhone = true;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -72,6 +82,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: Colors.white,
           elevation: 0,
+          actions: [
+            if (_hasPhone)
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: _showSearchDialog,
+              ),
+          ],
         ),
         body: _isLoading
             ? Center(
@@ -81,8 +98,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
                 ),
               )
-            : !_isLoggedIn
-            ? _buildLoginPrompt()
+            : !_hasPhone
+            ? _buildPhonePrompt()
             : _orders.isEmpty
             ? _buildEmptyState()
             : _buildOrdersList(),
@@ -90,9 +107,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildLoginPrompt() {
+  Widget _buildPhonePrompt() {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -100,77 +117,95 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: AppColors.primaryGreen.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.shopping_bag_outlined,
                 size: 60,
-                color: Colors.grey[400],
+                color: AppColors.primaryGreen,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'سجل دخولك لمشاهدة طلباتك',
-              style: GoogleFonts.cairo(fontSize: 18, color: Colors.grey[700]),
+              'تتبع طلباتك',
+              style: GoogleFonts.cairo(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-                _checkLoginAndLoadOrders();
-              },
-              icon: const Icon(Icons.login),
-              label: Text(
-                'تسجيل الدخول',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            const SizedBox(height: 8),
+            Text(
+              'أدخل رقم هاتفك لعرض طلباتك',
+              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 32),
-            // Track order section
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  Text(
-                    'أو تتبع طلبك برقم الهاتف',
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(fontSize: 18),
+                    decoration: InputDecoration(
+                      hintText: '09XXXXXXXX',
+                      hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
+                      prefixIcon: Icon(
+                        Icons.phone,
+                        color: AppColors.primaryGreen,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: AppColors.primaryGreen,
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () => _showTrackOrderDialog(),
-                    icon: const Icon(Icons.search),
-                    label: Text('تتبع الطلب', style: GoogleFonts.cairo()),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryGreen,
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          _searchOrders(_phoneController.text.trim()),
+                      icon: const Icon(Icons.search),
+                      label: Text(
+                        'عرض الطلبات',
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -201,7 +236,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'لا توجد طلبات بعد',
+            'لا توجد طلبات',
             style: GoogleFonts.cairo(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -210,26 +245,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'ابدأ التسوق وأضف منتجات إلى سلتك',
+            'لم يتم العثور على طلبات لهذا الرقم',
             style: GoogleFonts.cairo(fontSize: 14, color: Colors.grey[500]),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Navigate to home tab
-            },
-            icon: const Icon(Icons.shopping_cart),
-            label: Text(
-              'ابدأ التسوق',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGreen,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          TextButton.icon(
+            onPressed: _showSearchDialog,
+            icon: const Icon(Icons.search),
+            label: Text('بحث برقم آخر', style: GoogleFonts.cairo()),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryGreen,
             ),
           ),
         ],
@@ -239,7 +264,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _buildOrdersList() {
     return RefreshIndicator(
-      onRefresh: _loadOrders,
+      onRefresh: () => _searchOrders(_phoneController.text),
       color: AppColors.primaryGreen,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -257,18 +282,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: InkWell(
         onTap: () => _showOrderDetails(order),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -278,13 +303,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'طلب #${order.orderNumber}',
+                    'طلب #${order.id}',
                     style: GoogleFonts.cairo(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  _buildStatusChip(order.status, order.statusAr),
+                  _buildStatusChip(order.statusColor, order.statusLabel),
                 ],
               ),
               const SizedBox(height: 12),
@@ -312,7 +337,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      order.address,
+                      order.governorate?.name ?? order.address,
                       style: GoogleFonts.cairo(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -324,6 +349,57 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ],
               ),
               const Divider(height: 24),
+              // Products Preview
+              if (order.items.isNotEmpty) ...[
+                SizedBox(
+                  height: 50,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: order.items.length > 4 ? 4 : order.items.length,
+                    itemBuilder: (context, index) {
+                      if (index == 3 && order.items.length > 4) {
+                        return Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '+${order.items.length - 3}',
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      final item = order.items[index];
+                      return Container(
+                        width: 50,
+                        height: 50,
+                        margin: const EdgeInsets.only(left: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: CachedNetworkImage(
+                            imageUrl: item.productImage,
+                            fit: BoxFit.contain,
+                            errorWidget: (_, __, ___) =>
+                                Icon(Icons.image, color: Colors.grey[400]),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -335,9 +411,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ),
                   ),
                   Text(
-                    '${order.total.toStringAsFixed(2)} ج.م',
+                    '${order.total.toStringAsFixed(0)} $_currencySymbol',
                     style: GoogleFonts.cairo(
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primaryGreen,
                     ),
@@ -351,29 +427,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildStatusChip(String status, String statusAr) {
+  Widget _buildStatusChip(String statusColor, String statusLabel) {
     Color color;
     Color bgColor;
 
-    switch (status.toLowerCase()) {
-      case 'pending':
+    switch (statusColor.toLowerCase()) {
+      case 'yellow':
         color = Colors.orange;
         bgColor = Colors.orange.shade50;
         break;
-      case 'confirmed':
-      case 'processing':
+      case 'blue':
         color = Colors.blue;
         bgColor = Colors.blue.shade50;
         break;
-      case 'shipped':
+      case 'purple':
         color = Colors.purple;
         bgColor = Colors.purple.shade50;
         break;
-      case 'delivered':
+      case 'green':
         color = Colors.green;
         bgColor = Colors.green.shade50;
         break;
-      case 'cancelled':
+      case 'red':
         color = Colors.red;
         bgColor = Colors.red.shade50;
         break;
@@ -389,7 +464,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        statusAr,
+        statusLabel,
         style: GoogleFonts.cairo(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -411,7 +486,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
         child: Container(
-          height: MediaQuery.of(context).size.height * 0.75,
+          height: MediaQuery.of(context).size.height * 0.8,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -433,13 +508,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'تفاصيل الطلب',
+                      'تفاصيل الطلب #${order.id}',
                       style: GoogleFonts.cairo(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    _buildStatusChip(order.status, order.statusAr),
+                    _buildStatusChip(order.statusColor, order.statusLabel),
                   ],
                 ),
               ),
@@ -447,10 +522,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
-                    _buildDetailRow('رقم الطلب', '#${order.orderNumber}'),
                     _buildDetailRow('التاريخ', _formatDate(order.createdAt)),
                     _buildDetailRow('الاسم', order.customerName),
                     _buildDetailRow('الهاتف', order.customerPhone),
+                    _buildDetailRow('المحافظة', order.governorate?.name ?? '-'),
                     _buildDetailRow('العنوان', order.address),
                     if (order.notes != null && order.notes!.isNotEmpty)
                       _buildDetailRow('ملاحظات', order.notes!),
@@ -466,6 +541,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     ...order.items.map((item) => _buildOrderItem(item)),
                     const Divider(height: 32),
                     _buildPriceRow('المجموع الفرعي', order.subtotal),
+                    if (order.discountAmount > 0)
+                      _buildPriceRow(
+                        'الخصم',
+                        -order.discountAmount,
+                        isDiscount: true,
+                      ),
                     _buildPriceRow('رسوم التوصيل', order.deliveryFee),
                     const SizedBox(height: 8),
                     Row(
@@ -479,16 +560,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ),
                         ),
                         Text(
-                          '${order.total.toStringAsFixed(2)} ج.م',
+                          '${order.total.toStringAsFixed(0)} $_currencySymbol',
                           style: GoogleFonts.cairo(
-                            fontSize: 20,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2E7D32),
+                            color: AppColors.primaryGreen,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -506,7 +587,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 90,
             child: Text(
               label,
               style: GoogleFonts.cairo(color: Colors.grey[600]),
@@ -523,7 +604,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildOrderItem(OrderItem item) {
+  Widget _buildOrderItem(OrderItemDetails item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -533,6 +614,24 @@ class _OrdersScreenState extends State<OrdersScreen> {
       ),
       child: Row(
         children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: CachedNetworkImage(
+                imageUrl: item.productImage,
+                fit: BoxFit.contain,
+                errorWidget: (_, __, ___) =>
+                    Icon(Icons.image, color: Colors.grey[400]),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,7 +641,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '${item.quantity} × ${item.price.toStringAsFixed(2)} ج.م',
+                  '${item.quantity} × ${item.unitPrice.toStringAsFixed(0)} $_currencySymbol',
                   style: GoogleFonts.cairo(
                     fontSize: 13,
                     color: Colors.grey[600],
@@ -552,7 +651,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
           ),
           Text(
-            '${item.total.toStringAsFixed(2)} ج.م',
+            '${item.subtotal.toStringAsFixed(0)} $_currencySymbol',
             style: GoogleFonts.cairo(
               fontWeight: FontWeight.bold,
               color: AppColors.primaryGreen,
@@ -563,7 +662,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildPriceRow(String label, double amount) {
+  Widget _buildPriceRow(
+    String label,
+    double amount, {
+    bool isDiscount = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -571,17 +674,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
         children: [
           Text(label, style: GoogleFonts.cairo(color: Colors.grey[600])),
           Text(
-            '${amount.toStringAsFixed(2)} ج.م',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w500),
+            '${isDiscount ? '-' : ''}${amount.abs().toStringAsFixed(0)} $_currencySymbol',
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w500,
+              color: isDiscount ? Colors.green : null,
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showTrackOrderDialog() {
-    final phoneController = TextEditingController();
-
+  void _showSearchDialog() {
     showDialog(
       context: context,
       builder: (context) => Directionality(
@@ -591,24 +695,24 @@ class _OrdersScreenState extends State<OrdersScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            'تتبع الطلب',
+            'بحث عن طلبات',
             style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'أدخل رقم الهاتف المستخدم في الطلب',
+                'أدخل رقم الهاتف للبحث عن طلباتك',
                 style: GoogleFonts.cairo(color: Colors.grey[600]),
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: phoneController,
+                controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 textDirection: TextDirection.ltr,
                 textAlign: TextAlign.center,
                 decoration: InputDecoration(
-                  hintText: '0912345678',
+                  hintText: '09XXXXXXXX',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -626,27 +730,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 Navigator.pop(context);
-                final result = await OrdersService.trackOrder(
-                  phoneController.text,
-                );
-                if (result['success'] && mounted) {
-                  setState(() {
-                    _orders = result['orders'];
-                    _isLoggedIn = true; // Show orders list
-                  });
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result['message'],
-                        style: GoogleFonts.cairo(),
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                _searchOrders(_phoneController.text.trim());
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
