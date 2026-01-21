@@ -64,9 +64,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // Load currency
     final currencySymbol = await SettingsService.getCurrencySymbol();
 
+    // Find matching governorate from list by ID
+    Governorate? matchingGovernorate;
+    if (savedGovernorate != null && governorates.isNotEmpty) {
+      try {
+        matchingGovernorate = governorates.firstWhere(
+          (gov) => gov.id == savedGovernorate.id,
+        );
+      } catch (e) {
+        // Not found, keep null
+        matchingGovernorate = null;
+      }
+    }
+
     setState(() {
       _governorates = governorates;
-      _selectedGovernorate = savedGovernorate;
+      _selectedGovernorate = matchingGovernorate;
       _currencySymbol = currencySymbol;
       _isLoadingGovernorates = false;
     });
