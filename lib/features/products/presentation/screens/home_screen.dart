@@ -12,6 +12,7 @@ import '../../../../core/services/cart_service.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
+import '../widgets/widgets.dart';
 import '../../domain/entities/product.dart';
 
 /// Home Screen - Amazing Modern UI
@@ -205,10 +206,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               _buildSliverAppBar(),
               // Banner Carousel
               SliverToBoxAdapter(child: _buildBannerCarousel()),
-              // Categories (now under banner)
-              SliverToBoxAdapter(child: _buildCategories()),
+              // Categories Filter
+              SliverToBoxAdapter(
+                child: CategoriesFilter(
+                  categories: _categories,
+                  selectedIndex: _selectedCategoryIndex,
+                  isLoading: _isLoadingCategories,
+                  onCategorySelected: (index) {
+                    setState(() => _selectedCategoryIndex = index);
+                  },
+                ),
+              ),
               // Section Title
-              SliverToBoxAdapter(child: _buildSectionTitle()),
+              SliverToBoxAdapter(
+                child: SectionTitle(
+                  title: 'المنتجات الطازجة 🌿',
+                  actionText: 'عرض الكل',
+                  onActionTap: () {},
+                ),
+              ),
               // Products Grid
               _buildProductsGrid(),
               // Bottom padding
@@ -522,108 +538,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
-  }
-
-  Widget _buildCategories() {
-    if (_isLoadingCategories) {
-      return SizedBox(
-        height: 100,
-        child: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
-            strokeWidth: 2,
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        reverse: false, // Start from right side (RTL)
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          // Since reverse is true, index 0 appears on the right
-          // So we use index directly (الكل is at index 0, appears on right)
-          final category = _categories[index];
-          final isSelected = _selectedCategoryIndex == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedCategoryIndex = index);
-              // Filter products by category
-              if (index == 0) {
-                // "All" category
-                context.read<ProductsCubit>().loadProducts();
-              } else {
-                context.read<ProductsCubit>().loadProducts(
-                  categoryId: category.id,
-                );
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [
-                          AppColors.primaryGreenLight,
-                          AppColors.primaryGreen,
-                        ],
-                      )
-                    : null,
-                color: isSelected ? null : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSelected
-                        ? AppColors.primaryGreen.withOpacity(0.4)
-                        : Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _getCategoryIcon(category),
-                    color: isSelected ? Colors.white : AppColors.primaryGreen,
-                    size: 28,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    category.nameAr,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.grey[700],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(Category category) {
-    // Default icon mapping based on category name
-    final name = category.nameAr.toLowerCase();
-    if (category.id == 0) return Icons.grid_view_rounded;
-    if (name.contains('خضر')) return Icons.eco;
-    if (name.contains('فاكه') || name.contains('فواكه')) return Icons.apple;
-    if (name.contains('عضوي')) return Icons.grass;
-    if (name.contains('عرض') || name.contains('عروض')) return Icons.local_offer;
-    if (name.contains('لحوم') || name.contains('لحم')) return Icons.set_meal;
-    if (name.contains('ألبان') || name.contains('حليب')) return Icons.egg;
-    return Icons.category;
   }
 
   Widget _buildBannerCarousel() {
@@ -1131,6 +1045,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   ),
                                   onPressed: () {
                                     HapticFeedback.lightImpact();
+                                    // Add product to cart
+                                    _cartService.addToCart(product);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
