@@ -5,6 +5,7 @@ import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/governorates_service.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/coupon_service.dart';
+import '../../../../core/services/order_service.dart';
 
 /// Checkout Screen
 /// شاشة إتمام الطلب
@@ -131,62 +132,96 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // TODO: Submit order to API
-    await Future.delayed(const Duration(seconds: 2));
+    // Submit order to API
+    final response = await OrderService.createOrderFromCart(
+      customerName: _nameController.text.trim(),
+      customerPhone: _phoneController.text.trim(),
+      governorateId: _selectedGovernorate!.id,
+      address: _addressController.text.trim(),
+      couponCode: _appliedCoupon?.code,
+      notes: _notesController.text.trim(),
+    );
 
     setState(() => _isSubmitting = false);
 
-    // Save governorate for future orders
-    await GovernoratesService.saveSelectedGovernorate(_selectedGovernorate!);
+    if (response.success) {
+      // Save governorate for future orders
+      await GovernoratesService.saveSelectedGovernorate(_selectedGovernorate!);
 
-    // Clear cart and show success
-    _cartService.clearCart();
+      // Clear cart and show success
+      _cartService.clearCart();
 
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle, color: AppColors.primaryGreen, size: 80),
-              const SizedBox(height: 16),
-              Text(
-                'تم تقديم الطلب بنجاح!',
-                style: GoogleFonts.cairo(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: AppColors.primaryGreen,
+                  size: 80,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'سيتم التواصل معك قريباً',
-                style: GoogleFonts.cairo(color: Colors.grey[600]),
+                const SizedBox(height: 16),
+                Text(
+                  'تم تقديم الطلب بنجاح!',
+                  style: GoogleFonts.cairo(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  response.message,
+                  style: GoogleFonts.cairo(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                if (response.orderId != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'رقم الطلب: ${response.orderId}',
+                    style: GoogleFonts.cairo(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Close checkout
+                  Navigator.pop(context); // Close cart
+                },
+                child: Text(
+                  'حسناً',
+                  style: GoogleFonts.cairo(
+                    color: AppColors.primaryGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Close checkout
-                Navigator.pop(context); // Close cart
-              },
-              child: Text(
-                'حسناً',
-                style: GoogleFonts.cairo(
-                  color: AppColors.primaryGreen,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+        );
+      }
+    } else {
+      // Show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message, style: GoogleFonts.cairo()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
