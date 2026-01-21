@@ -2,7 +2,7 @@
 /// ثوابت الـ API
 class ApiConstants {
   // Base URL
-  static const String baseUrl = 'https://vella-niftier-gertrude.ngrok-free.dev/api';
+  static const String baseUrl = 'https://deliverymall.developerxsoftware.com/api';
 
   // Authentication Endpoints
   static const String register = '/register';
