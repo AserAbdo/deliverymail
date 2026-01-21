@@ -446,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ? Icon(Icons.check, color: AppColors.primaryGreen)
                     : null,
                 title: Text(
-                  gov.nameAr,
+                  gov.name,
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     color: _selectedGovernorate?.id == gov.id
