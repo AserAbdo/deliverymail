@@ -4,7 +4,6 @@ import 'package:khodargy/core/constants/app_colors.dart';
 import 'package:khodargy/features/products/presentation/screens/home_screen.dart';
 import 'package:khodargy/features/profile/presentation/screens/profile_screen.dart';
 import 'package:khodargy/features/orders/presentation/screens/orders_screen.dart';
-import 'package:khodargy/features/categories/presentation/screens/categories_screen.dart';
 
 /// Main Screen with Bottom Navigation
 /// الشاشة الرئيسية مع شريط التنقل السفلي
@@ -20,7 +19,6 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const CategoriesScreen(), // Categories Screen - الأقسام
     const OrdersScreen(), // Orders Screen
     const ProfileScreen(), // Profile Screen
   ];
@@ -61,11 +59,6 @@ class _MainScreenState extends State<MainScreen> {
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
               label: 'الرئيسية',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.category_outlined),
-              activeIcon: Icon(Icons.category),
-              label: 'الأقسام',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.shopping_bag_outlined),
