@@ -276,27 +276,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     child: Row(
                       children: [
-                        // Menu Button (3 dots) - Opens Governorate Selection
-                        GestureDetector(
-                          onTap: _showGovernorateDialog,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                left: BorderSide(
-                                  color: Colors.grey[300]!,
-                                  width: 1,
-                                ),
+                        // Search Icon (Left side)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(
+                                color: Colors.grey[300]!,
+                                width: 1,
                               ),
                             ),
-                            child: Icon(
-                              Icons.more_vert,
-                              color: Colors.grey[600],
-                              size: 22,
-                            ),
+                          ),
+                          child: Icon(
+                            Icons.search,
+                            color: Colors.grey[600],
+                            size: 22,
                           ),
                         ),
                         // Clear button (X) - show when there's text
@@ -334,13 +328,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             style: GoogleFonts.cairo(fontSize: 14),
                           ),
                         ),
-                        // Search Icon
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Icon(
-                            Icons.search,
-                            color: Colors.grey[600],
-                            size: 22,
+                        // Menu Button (3 dots) - Opens Governorate Selection (Right side)
+                        GestureDetector(
+                          onTap: _showGovernorateDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(
+                                  color: Colors.grey[300]!,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.more_vert,
+                              color: Colors.grey[600],
+                              size: 22,
+                            ),
                           ),
                         ),
                       ],

@@ -39,8 +39,15 @@ class GovernoratesService {
     try {
       final response = await http.get(
         Uri.parse('${ApiConstants.baseUrl}${ApiConstants.governorates}'),
-        headers: {'Accept': 'application/json'},
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true', // Skip ngrok warning page
+        },
       );
+
+      print('Governorates API Response: ${response.statusCode}');
+      print('Governorates Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

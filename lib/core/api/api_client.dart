@@ -9,6 +9,7 @@ class ApiClient {
     : defaultHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true', // Skip ngrok warning page
         ...?headers,
       };
 
