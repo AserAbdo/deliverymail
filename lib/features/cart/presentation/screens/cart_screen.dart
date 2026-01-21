@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cart_service.dart';
+import '../../../../core/services/settings_service.dart';
+import 'checkout_screen.dart';
 
 /// Cart Screen
 /// شاشة السلة
@@ -15,11 +17,20 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
+  String _currencySymbol = 'ج.م';
 
   @override
   void initState() {
     super.initState();
     _cartService.addListener(_onCartChanged);
+    _loadCurrency();
+  }
+
+  Future<void> _loadCurrency() async {
+    final symbol = await SettingsService.getCurrencySymbol();
+    if (mounted) {
+      setState(() => _currencySymbol = symbol);
+    }
   }
 
   @override
@@ -193,7 +204,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${item.product.price.toStringAsFixed(0)} ج.م / ${item.product.unit}',
+                      '${item.product.price.toStringAsFixed(0)} $_currencySymbol / ${item.product.unit}',
                       style: GoogleFonts.cairo(
                         fontSize: 14,
                         color: AppColors.primaryGreen,
@@ -309,7 +320,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ),
                 Text(
-                  '${_cartService.totalPrice.toStringAsFixed(0)} ج.م',
+                  '${_cartService.totalPrice.toStringAsFixed(0)} $_currencySymbol',
                   style: GoogleFonts.cairo(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -324,14 +335,10 @@ class _CartScreenState extends State<CartScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Navigate to checkout
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'جاري تجهيز صفحة الدفع...',
-                        style: GoogleFonts.cairo(),
-                      ),
-                      backgroundColor: AppColors.primaryGreen,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CheckoutScreen(),
                     ),
                   );
                 },
