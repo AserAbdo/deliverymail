@@ -55,27 +55,30 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: Hero(
-          tag: 'product-${widget.product.id}',
-          child: CachedNetworkImage(
-            imageUrl: widget.product.imageUrl,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Colors.grey[200],
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.primaryGreen,
+        background: Container(
+          color: Colors.grey[100],
+          child: Hero(
+            tag: 'product-${widget.product.id}',
+            child: CachedNetworkImage(
+              imageUrl: widget.product.imageUrl,
+              fit: BoxFit.contain,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[100],
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryGreen,
+                    ),
                   ),
                 ),
               ),
-            ),
-            errorWidget: (context, url, error) => Container(
-              color: Colors.grey[200],
-              child: Icon(
-                Icons.image_not_supported,
-                size: 80,
-                color: Colors.grey[400],
+              errorWidget: (context, url, error) => Container(
+                color: Colors.grey[100],
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
               ),
             ),
           ),

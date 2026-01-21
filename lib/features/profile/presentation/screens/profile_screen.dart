@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
+import 'about_screen.dart';
 
 /// Profile Screen
 /// شاشة الحساب الشخصي
@@ -207,22 +208,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Features
-                _buildFeatureItem(
-                  Icons.shopping_bag_outlined,
-                  'تتبع طلباتك بسهولة',
+                // Product Features (not login features)
+                _buildProductFeature(
+                  Icons.eco,
+                  'منتجات فريش',
+                  'خضروات وفواكه طازجة يومياً',
+                  Colors.green,
                 ),
-                _buildFeatureItem(
-                  Icons.favorite_outline,
-                  'احفظ منتجاتك المفضلة',
+                _buildProductFeature(
+                  Icons.favorite,
+                  'صحية وطبيعية',
+                  'منتجات عضوية 100%',
+                  Colors.red,
                 ),
-                _buildFeatureItem(
-                  Icons.local_offer_outlined,
-                  'احصل على عروض حصرية',
+                _buildProductFeature(
+                  Icons.local_shipping,
+                  'توصيل سريع',
+                  'نوصل لباب بيتك',
+                  Colors.blue,
                 ),
-                _buildFeatureItem(
-                  Icons.notifications_outlined,
-                  'تنبيهات للعروض الجديدة',
+                _buildProductFeature(
+                  Icons.verified,
+                  'جودة مضمونة',
+                  'أفضل المنتجات من المزارع',
+                  Colors.orange,
+                ),
+
+                const SizedBox(height: 32),
+
+                // About App Button
+                _buildMenuItem(
+                  Icons.info_outline,
+                  'عن التطبيق',
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  ),
                 ),
               ],
             ),
@@ -232,13 +253,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String text) {
+  Widget _buildProductFeature(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+  ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -250,18 +276,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primaryGreen),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.cairo(fontSize: 16, color: Colors.grey[800]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -355,31 +397,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Account Section
-                _buildSectionTitle('الحساب'),
-                _buildMenuItem(Icons.person_outline, 'معلومات الحساب', () {}),
-                _buildMenuItem(Icons.location_on_outlined, 'عناويني', () {}),
-                _buildMenuItem(Icons.payment_outlined, 'طرق الدفع', () {}),
-
-                const SizedBox(height: 24),
-
-                // Orders Section
-                _buildSectionTitle('الطلبات'),
-                _buildMenuItem(Icons.shopping_bag_outlined, 'طلباتي', () {}),
-                _buildMenuItem(Icons.favorite_outline, 'المفضلة', () {}),
-
-                const SizedBox(height: 24),
-
-                // Settings Section
-                _buildSectionTitle('الإعدادات'),
+                // App Info Section
+                _buildSectionTitle('التطبيق'),
                 _buildMenuItem(
-                  Icons.notifications_outlined,
-                  'الإشعارات',
-                  () {},
+                  Icons.info_outline,
+                  'عن التطبيق',
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  ),
                 ),
-                _buildMenuItem(Icons.language_outlined, 'اللغة', () {}),
-                _buildMenuItem(Icons.help_outline, 'المساعدة والدعم', () {}),
-                _buildMenuItem(Icons.info_outline, 'عن التطبيق', () {}),
+
+                const SizedBox(height: 24),
+
+                // Language (Static)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.language,
+                          color: AppColors.primaryGreen,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'اللغة',
+                          style: GoogleFonts.cairo(fontSize: 15),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'العربية',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: 24),
 
