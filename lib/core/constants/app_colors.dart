@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 /// ألوان التطبيق
 class AppColors {
   // Primary Colors - الألوان الأساسية
-  static const Color primaryGreen = Color(0xFF4CAF50); // Lighter fresh green
+  static const Color primaryGreen = Color(0xFF1e5d2c); // Lighter fresh green
   static const Color primaryGreenLight = Color(
     0xFF66BB6A,
   ); // Even lighter green
