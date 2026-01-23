@@ -1,13 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/constants/app_colors.dart';
 import 'core/di/injection_container.dart' as di;
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (optional - will work without it until configured)
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print(
+      '⚠️ Firebase not configured yet. Google Sign-In will not work until you:',
+    );
+    print('   1. Add google-services.json to android/app/');
+    print('   2. Add GoogleService-Info.plist to ios/Runner/');
+    print('   3. See FIREBASE_QUICK_START.md for setup instructions');
+    print('   Error: $e');
+  }
+
+  // Initialize dependency injection
   await di.init();
+
   runApp(const KhodargyApp());
 }
 

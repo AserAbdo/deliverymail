@@ -49,6 +49,17 @@ dependencies:
   get_it: ^7.6.4
   injectable: ^2.3.2
   shared_preferences: ^2.5.4
+  
+  # Shimmer loading effect
+  shimmer: ^3.0.0
+  
+  # Firebase & Google Sign-In
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  google_sign_in: ^6.2.2
+  
+  # Enhanced cache management
+  flutter_cache_manager: ^3.4.1
 
 dev_dependencies:
   flutter_test:

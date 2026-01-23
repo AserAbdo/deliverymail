@@ -59,45 +59,56 @@ class CategoriesFilter extends StatelessWidget {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [
-                          AppColors.primaryGreenLight,
-                          AppColors.primaryGreen,
-                        ],
-                      )
-                    : null,
-                color: isSelected ? null : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSelected
-                        ? AppColors.primaryGreen.withOpacity(0.4)
-                        : Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    _getCategoryIcon(category),
-                    color: isSelected ? Colors.white : AppColors.primaryGreen,
-                    size: 28,
+                  // Circular icon container with leaf design
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? AppColors.primaryGreen
+                          : const Color(0xFFE8F5E9), // Light green background
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primaryGreen.withValues(
+                                  alpha: 0.4,
+                                ),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        _getCategoryIcon(category),
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.primaryGreen,
+                        size: 28,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     category.nameAr,
                     style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.grey[700],
+                      fontSize: 11,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.primaryGreen
+                          : Colors.grey[700],
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

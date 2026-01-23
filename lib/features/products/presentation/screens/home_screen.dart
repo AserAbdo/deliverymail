@@ -7,9 +7,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/categories_service.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/utils/cache_manager.dart';
 
 import '../../../../core/services/cart_service.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
@@ -149,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     final cartCount = _cartService.itemCount;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
       decoration: const BoxDecoration(color: Colors.white),
       child: Row(
         children: [
@@ -205,30 +208,46 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Login Button
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'تسجيل الدخول',
-              style: GoogleFonts.cairo(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+          // Login Button (rectangular)
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'تسجيل الدخول',
+                style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
           const Spacer(),
-          // Logo
-          Text(
-            'دليفري مول',
-            style: GoogleFonts.cairo(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryGreen,
+          // Logo with Gradient
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [
+                Color(0xFFD4A853), // Gold
+                Color(0xFF1e5d2c), // Dark green
+              ],
+            ).createShader(bounds),
+            child: Text(
+              'دليفري مول',
+              style: GoogleFonts.cairo(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -415,10 +434,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          // Search Input
+          // 3 Dots Button (left/start)
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey[300]!, width: 1),
+            ),
+            child: Icon(Icons.more_vert, color: Colors.grey[600], size: 20),
+          ),
+          const SizedBox(width: 8),
+          // Search Input (right/end)
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -464,17 +494,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          // 3 Dots Button
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey[300]!, width: 1),
-            ),
-            child: Icon(Icons.more_vert, color: Colors.grey[600], size: 20),
-          ),
         ],
       ),
     );
@@ -507,8 +526,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     topRight: Radius.circular(16),
                   ),
                 ),
-                margin: const EdgeInsets.symmetric(horizontal: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     const SizedBox(width: 8),
@@ -526,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Offers List
               Container(
                 height: 150,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   color: AppColors.primaryGreen.withOpacity(0.1),
                   borderRadius: const BorderRadius.only(
@@ -535,12 +555,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 child: state is ProductsLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.primaryGreen,
-                          ),
-                        ),
+                    ? ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.all(12),
+                        itemCount: 5,
+                        itemBuilder: (context, index) {
+                          return ShimmerLoading.offerCard();
+                        },
                       )
                     : products.isEmpty
                     ? Center(
@@ -603,12 +624,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   imageUrl: product.imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[100],
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
+                  cacheManager: CustomCacheManager.instance,
+                  placeholder: (context, url) => ShimmerLoading.offerCard(),
                   errorWidget: (context, url, error) => Container(
                     color: Colors.grey[100],
                     child: Icon(Icons.image, color: Colors.grey[400]),
@@ -655,9 +672,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoriesSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Section Title
           Padding(
@@ -673,11 +690,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // Categories Row
           _isLoadingCategories
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryGreen,
-                    ),
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(
+                    3,
+                    (index) => Expanded(child: ShimmerLoading.categoryCard()),
                   ),
                 )
               : _categories.isEmpty
@@ -700,21 +717,41 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCard(Category category) {
-    // Icon based on category name
+    // Icon based on category name - more beautiful and expressive
     IconData iconData = Icons.category;
-    Color iconColor = Colors.grey;
+    List<Color> gradientColors = [
+      AppColors.primaryGreen,
+      AppColors.primaryGreen.withOpacity(0.7),
+    ];
+    Color iconColor = Colors.white;
 
-    if (category.nameAr.contains('خضار') || category.nameAr.contains('فواكه')) {
-      iconData = Icons.shopping_basket;
-      iconColor = AppColors.primaryGreen;
+    // Vegetables & Fruits - Beautiful green gradient with leaf/apple icons
+    if (category.nameAr.contains('خضار')) {
+      iconData = Icons.spa; // Beautiful leaf/nature icon
+      gradientColors = [
+        const Color(0xFF4CAF50), // Vibrant green
+        const Color(0xFF81C784), // Light green
+      ];
+    } else if (category.nameAr.contains('فواكه')) {
+      iconData = Icons.apple; // Apple icon for fruits
+      gradientColors = [
+        const Color(0xFFE91E63), // Pink/Red
+        const Color(0xFFF48FB1), // Light pink
+      ];
     } else if (category.nameAr.contains('غذائية') ||
         category.nameAr.contains('طعام')) {
-      iconData = Icons.restaurant;
-      iconColor = Colors.orange;
+      iconData = Icons.shopping_basket_outlined; // Basket icon
+      gradientColors = [
+        const Color(0xFFFF9800), // Orange
+        const Color(0xFFFFB74D), // Light orange
+      ];
     } else if (category.nameAr.contains('منظفات') ||
         category.nameAr.contains('شخصية')) {
-      iconData = Icons.clean_hands;
-      iconColor = Colors.purple;
+      iconData = Icons.cleaning_services_outlined; // Cleaning icon
+      gradientColors = [
+        const Color(0xFF9C27B0), // Purple
+        const Color(0xFFBA68C8), // Light purple
+      ];
     }
 
     return Expanded(
@@ -724,33 +761,44 @@ class _HomeScreenState extends State<HomeScreen> {
           context.read<ProductsCubit>().loadProducts(categoryId: category.id);
         },
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(16),
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Circular icon container with gradient
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 70,
+                height: 70,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors[0].withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Icon(iconData, color: iconColor, size: 28),
+                child: Center(
+                  child: Icon(iconData, color: iconColor, size: 36),
+                ),
               ),
               const SizedBox(height: 12),
               Text(
                 category.nameAr,
                 style: GoogleFonts.cairo(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
+                  color: Colors.grey[800],
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
@@ -762,29 +810,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedTitle() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'المنتجات المميزة',
-            style: GoogleFonts.cairo(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      child: Center(
+        child: Text(
+          'المنتجات المميزة',
+          style: GoogleFonts.cairo(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800],
           ),
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'عرض الكل',
-              style: GoogleFonts.cairo(
-                color: AppColors.primaryGreen,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -807,25 +842,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       builder: (context, state) {
         if (state is ProductsLoading) {
-          return SliverFillRemaining(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.primaryGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'جاري تحميل المنتجات...',
-                    style: GoogleFonts.cairo(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return ShimmerLoading.productsGrid();
         }
 
         if (state is ProductsEmpty) {
@@ -836,7 +853,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (state is ProductsLoaded) {
           return SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -870,112 +887,168 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Product Image
             Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                child: CachedNetworkImage(
-                  imageUrl: product.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[100],
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+              flex: 5,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    child: CachedNetworkImage(
+                      imageUrl: product.imageUrl,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      cacheManager: CustomCacheManager.instance,
+                      placeholder: (context, url) =>
+                          ShimmerLoading.productCard(),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[100],
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: Colors.grey[400],
+                          size: 40,
+                        ),
+                      ),
                     ),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[100],
-                    child: Icon(
-                      Icons.image_not_supported_outlined,
-                      color: Colors.grey[400],
-                      size: 40,
+                  // Organic Badge
+                  if (product.isOrganic)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF457C3B),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'عضوي',
+                          style: GoogleFonts.cairo(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                ],
               ),
             ),
             // Product Info
             Expanded(
-              flex: 2,
+              flex: 5,
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Product Name
                     Text(
                       product.nameAr,
                       style: GoogleFonts.cairo(
-                        fontSize: 14,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1A1A1A),
+                        height: 1.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 4),
+                    // Price per unit label
+                    Text(
+                      'السعر للكيلة',
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: const Color(0xFF457C3B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Price with unit
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
                       children: [
-                        // Add to cart button
-                        GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _cartService.addToCart(product);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'تمت الإضافة إلى السلة ✓',
-                                  style: GoogleFonts.cairo(),
-                                ),
-                                backgroundColor: AppColors.primaryGreen,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryGreen,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                        Text(
+                          product.price.toStringAsFixed(0),
+                          style: GoogleFonts.cairo(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A1A1A),
                           ),
                         ),
-                        // Price
+                        const SizedBox(width: 4),
                         Text(
-                          '${product.price.toStringAsFixed(0)} ل.س',
+                          'ل.س/كغ',
                           style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primaryGreen,
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
+                    ),
+                    const Spacer(),
+                    // Add to Cart Button - Full Width
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          _cartService.addToCart(product);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'تمت الإضافة إلى السلة ✓',
+                                style: GoogleFonts.cairo(),
+                              ),
+                              backgroundColor: const Color(0xFF457C3B),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF457C3B),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        icon: const Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 18,
+                        ),
+                        label: Text(
+                          'أضف للسلة',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

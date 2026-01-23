@@ -33,8 +33,8 @@ class AuthService {
         final token = response['data']['token'];
         final user = response['data']['user'];
 
-        await _saveToken(token);
-        await _saveUser(user);
+        await saveToken(token);
+        await saveUser(user);
 
         return {
           'success': true,
@@ -67,8 +67,8 @@ class AuthService {
         final token = response['data']['token'];
         final user = response['data']['user'];
 
-        await _saveToken(token);
-        await _saveUser(user);
+        await saveToken(token);
+        await saveUser(user);
 
         return {
           'success': true,
@@ -110,7 +110,7 @@ class AuthService {
 
       if (response['success'] == true) {
         final user = response['data'];
-        await _saveUser(user);
+        await saveUser(user);
         return user;
       }
 
@@ -149,13 +149,13 @@ class AuthService {
   }
 
   /// Save token to local storage
-  static Future<void> _saveToken(String token) async {
+  static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }
 
   /// Save user data to local storage
-  static Future<void> _saveUser(Map<String, dynamic> user) async {
+  static Future<void> saveUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, user.toString());
   }
