@@ -1,9 +1,9 @@
 import 'package:get_it/get_it.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants/api_constants.dart';
-import '../../features/products/data/datasources/products_remote_data_source.dart';
-import '../../features/products/data/repositories/products_repository_impl.dart';
-import '../../features/products/domain/repositories/products_repository.dart';
+import '../../features/products/data/datasources/product_remote_datasource.dart';
+import '../../features/products/data/repositories/product_repository_impl.dart';
+import '../../features/products/domain/repositories/product_repository.dart';
 import '../../features/products/domain/usecases/get_products.dart';
 import '../../features/products/presentation/cubit/products_cubit.dart';
 
@@ -21,13 +21,13 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetProducts(sl()));
 
   // Repository
-  sl.registerLazySingleton<ProductsRepository>(
-    () => ProductsRepositoryImpl(remoteDataSource: sl()),
+  sl.registerLazySingleton<ProductRepository>(
+    () => ProductRepositoryImpl(remoteDataSource: sl()),
   );
 
   // Data sources
-  sl.registerLazySingleton<ProductsRemoteDataSource>(
-    () => ProductsRemoteDataSourceImpl(apiClient: sl()),
+  sl.registerLazySingleton<ProductRemoteDataSource>(
+    () => ProductRemoteDataSourceImpl(apiClient: sl()),
   );
 
   //! Core

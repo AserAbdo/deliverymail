@@ -104,6 +104,9 @@ class ApiClient {
     final statusCode = response.statusCode;
     final body = response.body;
 
+    print('🔵 API Response Status: $statusCode');
+    print('🔵 API Response Body: $body');
+
     if (body.isEmpty) {
       throw Exception('Empty response from server');
     }
@@ -113,8 +116,10 @@ class ApiClient {
     if (statusCode >= 200 && statusCode < 300) {
       return data;
     } else if (statusCode == 401) {
+      print('❌ 401 Error - Full response: $data');
       throw Exception('Unauthorized - Please login again');
     } else if (statusCode == 404) {
+      print('❌ 404 Error - Full response: $data');
       throw Exception('Resource not found');
     } else if (statusCode == 422) {
       // Validation error

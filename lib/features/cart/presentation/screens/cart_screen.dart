@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/settings_service.dart';
+import '../../../../core/services/order_history_service.dart';
+import '../../../../features/products/domain/entities/product.dart';
 import 'checkout_screen.dart';
 
 /// Cart Screen
@@ -67,17 +69,9 @@ class _CartScreenState extends State<CartScreen> {
           ),
           actions: [
             if (_cartService.items.isNotEmpty)
-              TextButton(
-                onPressed: () {
-                  _cartService.clearCart();
-                },
-                child: Text(
-                  'مسح الكل',
-                  style: GoogleFonts.cairo(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              IconButton(
+                icon: const Icon(Icons.history, color: Colors.grey),
+                onPressed: _showOrderHistory,
               ),
           ],
         ),
@@ -445,6 +439,247 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show order history dialog
+  void _showOrderHistory() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => OrderHistoryModal(
+        cartService: _cartService,
+        onOrderSelected: _onHistoryOrderSelected,
+      ),
+    );
+  }
+
+  /// Handle history order selection
+  void _onHistoryOrderSelected(HistoryOrder order) {
+    // Create a Product object to add to cart
+    final mockProduct = Product(
+      id: order.productId,
+      nameAr: order.productName,
+      descriptionAr: '',
+      price: order.price,
+      unit: '',
+      imageUrl: order.productImage,
+      category: '',
+    );
+
+    // Add to cart
+    _cartService.addToCart(mockProduct, quantity: order.quantity);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${order.productName} تمت إضافته للسلة',
+          style: GoogleFonts.cairo(),
+        ),
+        backgroundColor: AppColors.primaryGreen,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // Close dialog
+    Navigator.pop(context);
+  }
+}
+
+/// Order History Modal
+class OrderHistoryModal extends StatefulWidget {
+  final CartService cartService;
+  final Function(HistoryOrder) onOrderSelected;
+
+  const OrderHistoryModal({
+    super.key,
+    required this.cartService,
+    required this.onOrderSelected,
+  });
+
+  @override
+  State<OrderHistoryModal> createState() => _OrderHistoryModalState();
+}
+
+class _OrderHistoryModalState extends State<OrderHistoryModal> {
+  late Future<List<HistoryOrder>> _historyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _historyFuture = OrderHistoryService.getUniqueHistory();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'الطلبات السابقة',
+                      style: GoogleFonts.cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // History list
+              Expanded(
+                child: FutureBuilder<List<HistoryOrder>>(
+                  future: _historyFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.history,
+                              size: 48,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'لا توجد طلبات سابقة',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) {
+                        final order = snapshot.data![index];
+                        return _buildHistoryItem(order);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(HistoryOrder order) {
+    return InkWell(
+      onTap: () => widget.onOrderSelected(order),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            // Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: order.productImage,
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  width: 80,
+                  height: 80,
+                  color: Colors.grey[200],
+                  child: Icon(
+                    Icons.image_not_supported,
+                    color: Colors.grey[400],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    order.productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.cairo(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${order.price} ج.م',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryGreen,
+                        ),
+                      ),
+                      Text(
+                        '${order.quantity} قطعة',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

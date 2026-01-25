@@ -1,14 +1,16 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
 import '../entities/product.dart';
-import '../repositories/products_repository.dart';
+import '../repositories/product_repository.dart';
 
 /// Get Products Use Case
 /// حالة استخدام: جلب المنتجات
 class GetProducts {
-  final ProductsRepository repository;
+  final ProductRepository repository;
 
   GetProducts(this.repository);
 
-  Future<List<Product>> call({
+  Future<Either<Failure, List<Product>>> call({
     int? categoryId,
     String? search,
     double? minPrice,

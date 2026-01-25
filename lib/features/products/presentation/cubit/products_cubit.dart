@@ -19,25 +19,29 @@ class ProductsCubit extends Cubit<ProductsState> {
     emit(ProductsLoading());
 
     try {
-      final products = await getProducts(
+      final result = await getProducts(
         categoryId: categoryId,
         page: page,
         perPage: perPage,
       );
 
-      if (products.isEmpty) {
-        emit(
-          ProductsEmpty(
-            categoryId != null
-                ? 'لا توجد منتجات في هذه الفئة'
-                : 'لا توجد منتجات متاحة',
-          ),
-        );
-      } else {
-        emit(
-          ProductsLoaded(products: products, selectedCategoryId: categoryId),
-        );
-      }
+      result.fold((failure) => emit(ProductsError(failure.message)), (
+        products,
+      ) {
+        if (products.isEmpty) {
+          emit(
+            ProductsEmpty(
+              categoryId != null
+                  ? 'لا توجد منتجات في هذه الفئة'
+                  : 'لا توجد منتجات متاحة',
+            ),
+          );
+        } else {
+          emit(
+            ProductsLoaded(products: products, selectedCategoryId: categoryId),
+          );
+        }
+      });
     } catch (e) {
       emit(ProductsError(e.toString()));
     }
@@ -49,15 +53,19 @@ class ProductsCubit extends Cubit<ProductsState> {
     emit(ProductsLoading());
 
     try {
-      final products = await getProducts(categoryId: categoryId, perPage: 100);
+      final result = await getProducts(categoryId: categoryId, perPage: 100);
 
-      if (products.isEmpty) {
-        emit(const ProductsEmpty('لا توجد منتجات في هذه الفئة'));
-      } else {
-        emit(
-          ProductsLoaded(products: products, selectedCategoryId: categoryId),
-        );
-      }
+      result.fold((failure) => emit(ProductsError(failure.message)), (
+        products,
+      ) {
+        if (products.isEmpty) {
+          emit(const ProductsEmpty('لا توجد منتجات في هذه الفئة'));
+        } else {
+          emit(
+            ProductsLoaded(products: products, selectedCategoryId: categoryId),
+          );
+        }
+      });
     } catch (e) {
       emit(ProductsError(e.toString()));
     }
@@ -74,13 +82,17 @@ class ProductsCubit extends Cubit<ProductsState> {
     emit(ProductsLoading());
 
     try {
-      final products = await getProducts(search: query, perPage: 100);
+      final result = await getProducts(search: query, perPage: 100);
 
-      if (products.isEmpty) {
-        emit(const ProductsEmpty('لا توجد نتائج للبحث'));
-      } else {
-        emit(ProductsLoaded(products: products, searchQuery: query));
-      }
+      result.fold((failure) => emit(ProductsError(failure.message)), (
+        products,
+      ) {
+        if (products.isEmpty) {
+          emit(const ProductsEmpty('لا توجد نتائج للبحث'));
+        } else {
+          emit(ProductsLoaded(products: products, searchQuery: query));
+        }
+      });
     } catch (e) {
       emit(ProductsError(e.toString()));
     }

@@ -6,6 +6,7 @@ import '../../../../core/services/governorates_service.dart';
 import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/coupon_service.dart';
 import '../../../../core/services/order_service.dart';
+import '../../../../core/services/checkout_data_service.dart';
 
 /// Checkout Screen
 /// شاشة إتمام الطلب
@@ -44,6 +45,38 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _loadSavedCheckoutData();
+  }
+
+  /// Load saved checkout data from SharedPreferences
+  Future<void> _loadSavedCheckoutData() async {
+    final savedName = await CheckoutDataService.getName();
+    final savedPhone = await CheckoutDataService.getPhone();
+    final savedEmail = await CheckoutDataService.getEmail();
+    final savedAddress = await CheckoutDataService.getAddress();
+    final savedGovernorateId = await CheckoutDataService.getGovernorateId();
+
+    if (mounted) {
+      setState(() {
+        if (savedName != null) _nameController.text = savedName;
+        if (savedPhone != null) _phoneController.text = savedPhone;
+        if (savedEmail != null) {
+          // Note: The original code doesn't show email field, adjust as needed
+        }
+        if (savedAddress != null) _addressController.text = savedAddress;
+
+        // Set saved governorate
+        if (savedGovernorateId != null && _governorates.isNotEmpty) {
+          try {
+            _selectedGovernorate = _governorates.firstWhere(
+              (gov) => gov.id == savedGovernorateId,
+            );
+          } catch (e) {
+            // Not found
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -144,6 +177,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     setState(() => _isSubmitting = true);
+
+    // Save checkout data to SharedPreferences (excluding coupon code & notes)
+    await CheckoutDataService.saveName(_nameController.text.trim());
+    await CheckoutDataService.savePhone(_phoneController.text.trim());
+    await CheckoutDataService.saveAddress(_addressController.text.trim());
+    if (_selectedGovernorate != null) {
+      await CheckoutDataService.saveGovernorate(
+        _selectedGovernorate!.name,
+        _selectedGovernorate!.id.toString(),
+      );
+    }
 
     // Submit order to API
     final response = await OrderService.createOrderFromCart(

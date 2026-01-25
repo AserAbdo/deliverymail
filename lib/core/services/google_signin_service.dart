@@ -13,10 +13,14 @@ class GoogleSignInService {
   /// Sign in with Google
   static Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
+      print('🔵 بدء عملية تسجيل الدخول بـ Google...');
+
       // Check if Firebase is initialized
       try {
         FirebaseAuth.instance;
+        print('✅ Firebase initialized successfully');
       } catch (e) {
+        print('❌ Firebase Error: $e');
         return {
           'success': false,
           'message':
@@ -25,15 +29,22 @@ class GoogleSignInService {
       }
 
       // Trigger the authentication flow
+      print('🔵 فتح نافذة Google Sign In...');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
+        print('⚠️ تم إلغاء تسجيل الدخول من قبل المستخدم');
         return {'success': false, 'message': 'تم إلغاء تسجيل الدخول'};
       }
 
+      print('✅ تم اختيار حساب Google: ${googleUser.email}');
+
       // Obtain the auth details from the request
+      print('🔵 الحصول على بيانات المصادقة...');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      print('✅ تم الحصول على accessToken و idToken');
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -41,19 +52,38 @@ class GoogleSignInService {
         idToken: googleAuth.idToken,
       );
 
+      print('🔵 تسجيل الدخول إلى Firebase...');
       // Sign in to Firebase with the Google credential
       final UserCredential userCredential = await _auth.signInWithCredential(
         credential,
       );
 
-      // Get the Firebase ID token
-      final String? idToken = await userCredential.user?.getIdToken();
+      print('✅ تم تسجيل الدخول إلى Firebase: ${userCredential.user?.email}');
+
+      // Get the Firebase ID token (force refresh to avoid revoked token)
+      print('🔵 الحصول على Firebase ID Token جديد...');
+      final String? idToken = await userCredential.user?.getIdToken(
+        true,
+      ); // true = force refresh
 
       if (idToken == null) {
+        print('❌ فشل الحصول على ID Token');
         return {'success': false, 'message': 'فشل الحصول على رمز المصادقة'};
       }
 
+      print('✅ تم الحصول على ID Token (الطول: ${idToken.length})');
+      print('🔵 ID Token: ${idToken.substring(0, 50)}...');
+
       // Send the ID token to your Laravel backend
+      print('🔵 إرسال البيانات إلى Backend...');
+      print('🔵 Endpoint: /auth/google');
+      print('🔵 Body: {');
+      print('  id_token: ${idToken.substring(0, 30)}...,');
+      print('  email: ${userCredential.user?.email},');
+      print('  name: ${userCredential.user?.displayName},');
+      print('  photo_url: ${userCredential.user?.photoURL}');
+      print('}');
+
       final response = await _apiClient.post(
         '/auth/google',
         body: {
@@ -64,7 +94,11 @@ class GoogleSignInService {
         },
       );
 
+      print('✅ تم استلام الرد من Backend');
+      print('🔵 Response: $response');
+
       if (response['success'] == true) {
+        print('✅ تسجيل الدخول ناجح!');
         // Save the token and user data from your backend
         final token = response['data']['token'];
         final user = response['data']['user'];
@@ -79,13 +113,22 @@ class GoogleSignInService {
         };
       }
 
+      print('❌ فشل تسجيل الدخول: ${response['message']}');
       return {
         'success': false,
         'message': response['message'] ?? 'فشل تسجيل الدخول',
       };
     } on FirebaseAuthException catch (e) {
+      print('❌ Firebase Auth Error:');
+      print('   Code: ${e.code}');
+      print('   Message: ${e.message}');
+      print('   Full Error: $e');
       return {'success': false, 'message': _getFirebaseErrorMessage(e.code)};
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ خطأ غير متوقع:');
+      print('   Error: $e');
+      print('   Type: ${e.runtimeType}');
+      print('   StackTrace: $stackTrace');
       return {
         'success': false,
         'message': 'حدث خطأ أثناء تسجيل الدخول: ${e.toString()}',

@@ -7,9 +7,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/categories_service.dart';
+import '../../../../core/services/governorates_service.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/utils/cache_manager.dart';
-
 import '../../../../core/services/cart_service.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
@@ -17,6 +17,7 @@ import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
 import 'product_details_screen.dart';
+import 'category_products_screen.dart';
 
 /// Home Screen - Redesigned UI matching the provided design
 /// الشاشة الرئيسية - التصميم الجديد
@@ -40,6 +41,17 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
 
+  // Governorate
+  List<Governorate> _governorates = [];
+  Governorate? _selectedGovernorate;
+
+  // Cubit instance
+  ProductsCubit? _productsCubit;
+  ProductsCubit? _searchCubit; // Separate cubit for search suggestions
+
+  // Search suggestions
+  bool _showSearchSuggestions = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +66,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadInitialData() async {
     await _loadCategories();
+    await _loadGovernorates();
+  }
+
+  Future<void> _loadGovernorates() async {
+    try {
+      final governorates = await GovernoratesService.getGovernorates();
+      final savedGovernorate =
+          await GovernoratesService.getSelectedGovernorate();
+
+      Governorate? selected;
+      if (savedGovernorate != null && governorates.isNotEmpty) {
+        try {
+          selected = governorates.firstWhere(
+            (gov) => gov.id == savedGovernorate.id,
+          );
+        } catch (e) {
+          selected = null;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _governorates = governorates;
+          _selectedGovernorate = selected;
+        });
+      }
+    } catch (e) {
+      // Error loading governorates
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -86,11 +127,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _performSearch() {
-    final cubit = context.read<ProductsCubit>();
     if (_searchQuery.isEmpty) {
-      cubit.loadProducts();
+      setState(() {
+        _showSearchSuggestions = false;
+      });
+      // Don't reload products, keep them as is
     } else {
-      cubit.searchProducts(_searchQuery);
+      // Create search cubit if not exists
+      _searchCubit ??= di.sl<ProductsCubit>();
+
+      // Show suggestions overlay and load search results
+      setState(() {
+        _showSearchSuggestions = true;
+      });
+      _searchCubit!.searchProducts(_searchQuery);
     }
   }
 
@@ -98,7 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _debounceTimer?.cancel();
     _searchController.clear();
     _searchQuery = '';
-    _performSearch();
+    setState(() {
+      _showSearchSuggestions = false;
+    });
+    // Don't call _performSearch, just hide suggestions
   }
 
   @override
@@ -106,6 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     _debounceTimer?.cancel();
     _cartService.removeListener(_onCartChanged);
+    _productsCubit = null;
+    _searchCubit?.close(); // Close search cubit if exists
+    _searchCubit = null;
     super.dispose();
   }
 
@@ -119,32 +175,57 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     return BlocProvider(
-      create: (_) => di.sl<ProductsCubit>()..loadProducts(),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                // Header with Logo, Login Button, Cart
-                SliverToBoxAdapter(child: _buildHeader()),
-                // Search Bar
-                SliverToBoxAdapter(child: _buildSearchBar()),
-                // Special Offers Section
-                SliverToBoxAdapter(child: _buildSpecialOffersSection()),
-                // Categories Section
-                SliverToBoxAdapter(child: _buildCategoriesSection()),
-                // Featured Products Section Title
-                SliverToBoxAdapter(child: _buildFeaturedTitle()),
-                // Products Grid
-                _buildProductsGrid(),
-                // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              ],
+      create: (_) {
+        _productsCubit = di.sl<ProductsCubit>()..loadProducts();
+        return _productsCubit!;
+      },
+      child: Builder(
+        builder: (context) {
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: Stack(
+                children: [
+                  SafeArea(
+                    child: CustomScrollView(
+                      slivers: [
+                        // Header with Logo, Login Button, Cart
+                        SliverToBoxAdapter(child: _buildHeader()),
+                        // Search Bar
+                        SliverToBoxAdapter(child: _buildSearchBar()),
+                        // Special Offers Section
+                        SliverToBoxAdapter(child: _buildSpecialOffersSection()),
+                        // Categories Section
+                        SliverToBoxAdapter(child: _buildCategoriesSection()),
+                        // Featured Products Section Title
+                        SliverToBoxAdapter(child: _buildFeaturedTitle()),
+                        // Products Grid
+                        _buildProductsGrid(),
+                        // Bottom padding
+                        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                      ],
+                    ),
+                  ),
+                  // Backdrop overlay when search is active
+                  if (_showSearchSuggestions)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showSearchSuggestions = false;
+                          });
+                        },
+                        child: Container(color: Colors.black.withOpacity(0.3)),
+                      ),
+                    ),
+                  // Search suggestions overlay
+                  if (_showSearchSuggestions) _buildSearchSuggestionsOverlay(),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -482,18 +563,49 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
-          // 3 Dots Button (left/start)
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey[300]!, width: 1),
+          // Governorate Dropdown Button
+          GestureDetector(
+            onTap: _showGovernorateDropdown,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey[300]!, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primaryGreen,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _selectedGovernorate?.name ?? 'المحافظة',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedGovernorate != null
+                          ? Colors.grey[800]
+                          : Colors.grey[500],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: Colors.grey[600],
+                    size: 18,
+                  ),
+                ],
+              ),
             ),
-            child: Icon(Icons.more_vert, color: Colors.grey[600], size: 20),
           ),
           const SizedBox(width: 8),
-          // Search Input (right/end)
+          // Search Input
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -540,6 +652,117 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Show governorate dropdown
+  void _showGovernorateDropdown() {
+    if (_governorates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('جاري التحميل...', style: GoogleFonts.cairo()),
+          backgroundColor: Colors.grey[600],
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'اختر المحافظة',
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              // List
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _governorates.length,
+                  itemBuilder: (context, index) {
+                    final gov = _governorates[index];
+                    final isSelected = _selectedGovernorate?.id == gov.id;
+                    return ListTile(
+                      selected: isSelected,
+                      selectedTileColor: AppColors.primaryGreen.withOpacity(
+                        0.1,
+                      ),
+                      onTap: () async {
+                        // Save to SharedPreferences
+                        await GovernoratesService.saveSelectedGovernorate(gov);
+
+                        setState(() {
+                          _selectedGovernorate = gov;
+                        });
+
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${gov.name} تم اختيارها',
+                                style: GoogleFonts.cairo(),
+                              ),
+                              backgroundColor: AppColors.primaryGreen,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      title: Text(
+                        gov.name,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? AppColors.primaryGreen
+                              : Colors.grey[800],
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: AppColors.primaryGreen,
+                              size: 24,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -788,10 +1011,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoryCard(Category category) {
     // Check if this is vegetables category (handles both spellings: الخضروات and الخصروات)
     final bool isVegetables =
-        category.nameAr.contains('خ') && category.nameAr.contains('روات');
+        category.nameAr.contains('خضروات') ||
+        category.nameAr.contains('خصروات');
 
     // Icon and colors based on category name
-    IconData iconData = Icons.category;
+    IconData iconData = Icons.eco;
     Color iconColor = const Color(0xFF4CAF50);
     Color backgroundColor = const Color(0xFFE8F5E9);
 
@@ -800,7 +1024,8 @@ class _HomeScreenState extends State<HomeScreen> {
       iconData = Icons.eco; // Eco/leaf icon - matches the design
       iconColor = const Color(0xFF4CAF50); // Green
       backgroundColor = const Color(0xFFE8F5E9); // Light green
-    } else if (category.nameAr.contains('فواكه')) {
+    } else if (category.nameAr.contains('فواكه') ||
+        category.nameAr.contains('فاكهة')) {
       iconData = Icons.apple; // Apple icon for fruits
       iconColor = const Color(0xFFFF9800); // Orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
@@ -811,7 +1036,12 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
     } else if (category.nameAr.contains('منظفات') ||
         category.nameAr.contains('شخصية')) {
-      iconData = Icons.person_outline; // Person icon
+      iconData = Icons.cleaning_services; // Cleaning icon
+      iconColor = const Color(0xFF2196F3); // Blue
+      backgroundColor = const Color(0xFFE3F2FD); // Light blue
+    } else if (category.nameAr.contains('لحوم') ||
+        category.nameAr.contains('دجاج')) {
+      iconData = Icons.set_meal; // Meat icon
       iconColor = const Color(0xFFE91E63); // Pink
       backgroundColor = const Color(0xFFFCE4EC); // Light pink
     }
@@ -819,8 +1049,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          // Load products by category
-          context.read<ProductsCubit>().loadProducts(categoryId: category.id);
+          // Navigate to category products screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CategoryProductsScreen(
+                categoryId: category.id,
+                categoryName: category.nameAr,
+              ),
+            ),
+          );
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -848,14 +1086,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: isVegetables
-                      ? Image.asset(
-                          'assets/nature.png',
-                          width: 32,
-                          height: 32,
-                          fit: BoxFit.contain,
-                        )
-                      : Icon(iconData, color: iconColor, size: 28),
+                  child: Icon(iconData, color: iconColor, size: 28),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1163,7 +1394,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     // Subtitle
                     Text(
-                      'اختر كمية برتقال ابو صرة بالكيلوغرام',
+                      'اختر كمية ${product.nameAr} بالكيلوغرام',
                       style: GoogleFonts.cairo(
                         fontSize: 13,
                         color: Colors.grey[500],
@@ -1175,20 +1406,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Plus button
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                quantity++;
-                              });
-                            },
-                            icon: const Icon(Icons.add, size: 24),
-                            color: const Color(0xFF457C3B),
+                        // Plus button - Square
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              quantity++;
+                            });
+                          },
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              size: 24,
+                              color: Color(0xFF457C3B),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 32),
@@ -1213,24 +1449,29 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(width: 32),
-                        // Minus button
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey[300]!),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: IconButton(
-                            onPressed: quantity > 1
-                                ? () {
-                                    setState(() {
-                                      quantity--;
-                                    });
-                                  }
-                                : null,
-                            icon: const Icon(Icons.remove, size: 24),
-                            color: quantity > 1
-                                ? const Color(0xFF457C3B)
-                                : Colors.grey[300],
+                        // Minus button - Square
+                        InkWell(
+                          onTap: quantity > 1
+                              ? () {
+                                  setState(() {
+                                    quantity--;
+                                  });
+                                }
+                              : null,
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 24,
+                              color: quantity > 1
+                                  ? const Color(0xFF457C3B)
+                                  : Colors.grey[300],
+                            ),
                           ),
                         ),
                       ],
@@ -1261,8 +1502,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Add to cart button
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
+                      height: 52,
+                      child: ElevatedButton(
                         onPressed: () {
                           _cartService.addToCart(product, quantity: quantity);
                           Navigator.pop(context);
@@ -1285,14 +1526,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
-                        icon: const Icon(Icons.shopping_cart, size: 20),
-                        label: Text(
-                          'إضافة للسلة',
-                          style: GoogleFonts.cairo(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.shopping_cart, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'إضافة للسلة',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1357,6 +1605,201 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSuggestionsOverlay() {
+    // Calculate approximate height of header + search bar
+    const headerHeight = 60.0; // Approximate header height
+    const searchBarHeight = 60.0; // Approximate search bar height
+    const topOffset = headerHeight + searchBarHeight + 10; // 10 for margins
+
+    if (_searchCubit == null) return const SizedBox.shrink();
+
+    return Positioned(
+      top: topOffset,
+      left: 8,
+      right: 8,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _showSearchSuggestions = false;
+          });
+        },
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: BlocProvider<ProductsCubit>.value(
+              value: _searchCubit!,
+              child: BlocBuilder<ProductsCubit, ProductsState>(
+                builder: (context, state) {
+                  if (state is ProductsLoading) {
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  if (state is ProductsLoaded && state.products.isNotEmpty) {
+                    // Show up to 5 suggestions
+                    final suggestions = state.products.take(5).toList();
+
+                    return Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // AI Search Header
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F7ED),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 18,
+                                  color: const Color(0xFF457C3B),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'بحث ذكي بالذكاء الاصطناعي',
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 13,
+                                    color: const Color(0xFF457C3B),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Results List
+                          Flexible(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              itemCount: suggestions.length,
+                              separatorBuilder: (context, index) => Divider(
+                                height: 1,
+                                color: Colors.grey[200],
+                                indent: 70,
+                              ),
+                              itemBuilder: (context, index) {
+                                final product = suggestions[index];
+                                return ListTile(
+                                  onTap: () {
+                                    setState(() {
+                                      _showSearchSuggestions = false;
+                                    });
+                                    // Show quantity dialog instead of navigating
+                                    _showQuantityDialog(product);
+                                  },
+                                  leading: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: CachedNetworkImage(
+                                      imageUrl: product.imageUrl,
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Container(
+                                            color: Colors.grey[200],
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    product.nameAr,
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    '${product.price} ل.س',
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 13,
+                                      color: AppColors.primaryGreen,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.arrow_back_ios,
+                                    size: 16,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (state is ProductsEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'لا توجد نتائج',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

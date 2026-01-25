@@ -198,7 +198,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
   Widget _buildProductCard(BuildContext context, Product product, int index) {
     final cartService = CartService();
-    
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: Duration(milliseconds: 400 + (index * 100)),
