@@ -5,12 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/utils/cache_manager.dart';
+import '../../../../core/services/cart_service.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
+import 'product_details_screen.dart';
 
 /// Category Products Screen - شاشة منتجات القسم
-class CategoryProductsScreen extends StatelessWidget {
+class CategoryProductsScreen extends StatefulWidget {
   final int categoryId;
   final String categoryName;
 
@@ -19,6 +23,29 @@ class CategoryProductsScreen extends StatelessWidget {
     required this.categoryId,
     required this.categoryName,
   });
+
+  @override
+  State<CategoryProductsScreen> createState() => _CategoryProductsScreenState();
+}
+
+class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
+  final CartService _cartService = CartService();
+
+  @override
+  void initState() {
+    super.initState();
+    _cartService.addListener(_onCartChanged);
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _cartService.removeListener(_onCartChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +58,7 @@ class CategoryProductsScreen extends StatelessWidget {
 
     return BlocProvider(
       create: (_) =>
-          di.sl<ProductsCubit>()..loadProducts(categoryId: categoryId),
+          di.sl<ProductsCubit>()..loadProducts(categoryId: widget.categoryId),
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
@@ -84,7 +111,7 @@ class CategoryProductsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
-                    categoryName,
+                    widget.categoryName,
                     style: GoogleFonts.cairo(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -170,6 +197,8 @@ class CategoryProductsScreen extends StatelessWidget {
   }
 
   Widget _buildProductCard(BuildContext context, Product product, int index) {
+    final cartService = CartService();
+    
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: Duration(milliseconds: 400 + (index * 100)),
@@ -179,237 +208,383 @@ class CategoryProductsScreen extends StatelessWidget {
           child: Opacity(opacity: value, child: child),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailsScreen(product: product),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                // TODO: Navigate to product details
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // Image Section
-                  Expanded(
-                    flex: 3,
-                    child: Stack(
-                      children: [
-                        Hero(
-                          tag: 'product-${product.id}',
-                          child: CachedNetworkImage(
-                            imageUrl: product.imageUrl,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[100],
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primaryGreen,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[100],
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: Colors.grey[400],
-                                size: 40,
-                              ),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Product Image
+              Expanded(
+                flex: 5,
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: product.imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        cacheManager: CustomCacheManager.instance,
+                        placeholder: (context, url) =>
+                            ShimmerLoading.productCard(),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[100],
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: Colors.grey[400],
+                            size: 40,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Organic Badge
+                    if (product.isOrganic)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF457C3B),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'عضوي',
+                            style: GoogleFonts.cairo(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                        // Organic Badge
-                        if (product.isOrganic)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primaryGreenLight,
-                                    AppColors.primaryGreen,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.eco,
-                                    color: Colors.white,
-                                    size: 12,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'عضوي',
-                                    style: GoogleFonts.cairo(
-                                      fontSize: 10,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Info Section
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      ),
+                  ],
+                ),
+              ),
+              // Product Info
+              Expanded(
+                flex: 5,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Product Name
+                      Text(
+                        product.nameAr,
+                        style: GoogleFonts.cairo(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A1A1A),
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Price per unit label
+                      Text(
+                        'السعر للكيلة',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          color: const Color(0xFF457C3B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Price with unit
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            product.nameAr,
+                            product.price.toStringAsFixed(0),
                             style: GoogleFonts.cairo(
-                              fontSize: 14,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              height: 1.2,
+                              color: const Color(0xFF1A1A1A),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
                           ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Text(
-                                ' (${product.reviewCount})',
-                                style: GoogleFonts.cairo(
-                                  fontSize: 10,
-                                  color: Colors.grey[400],
-                                ),
-                              ),
-                              Text(
-                                product.rating.toString(),
-                                style: GoogleFonts.cairo(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.star_rounded,
-                                color: Color(0xFFFFB300),
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Add to Cart Button
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primaryGreenLight,
-                                      AppColors.primaryGreen,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primaryGreen.withOpacity(
-                                        0.4,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: IconButton(
-                                  padding: EdgeInsets.zero,
-                                  icon: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    HapticFeedback.lightImpact();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          'تمت الإضافة إلى السلة ✓',
-                                          style: GoogleFonts.cairo(),
-                                        ),
-                                        backgroundColor: AppColors.primaryGreen,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        duration: const Duration(seconds: 1),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              // Price
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${product.price.toStringAsFixed(0)} ج.م',
-                                    style: GoogleFonts.cairo(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primaryGreen,
-                                    ),
-                                  ),
-                                  Text(
-                                    product.unit,
-                                    style: GoogleFonts.cairo(
-                                      fontSize: 10,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(width: 4),
+                          Text(
+                            'ل.س/كغ',
+                            style: GoogleFonts.cairo(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
-                    ),
+                      const Spacer(),
+                      // Add to Cart Button - Full Width
+                      SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _showQuantityDialog(context, product, cartService);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF457C3B),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          icon: const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 18,
+                          ),
+                          label: Text(
+                            'أضف للسلة',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  void _showQuantityDialog(
+    BuildContext context,
+    Product product,
+    CartService cartService,
+  ) {
+    int quantity = 1;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final double totalPrice = product.price * quantity;
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Close button
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Title
+                      Text(
+                        'تحديد الكمية',
+                        style: GoogleFonts.cairo(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        'اختر كمية ${product.nameAr} بال${product.unit}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          color: Colors.grey[500],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      // Quantity selector
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Plus button
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  quantity++;
+                                });
+                              },
+                              icon: const Icon(Icons.add, size: 24),
+                              color: const Color(0xFF457C3B),
+                            ),
+                          ),
+                          const SizedBox(width: 32),
+                          // Quantity display
+                          Column(
+                            children: [
+                              Text(
+                                '$quantity',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF457C3B),
+                                ),
+                              ),
+                              Text(
+                                product.unit,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 32),
+                          // Minus button
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: IconButton(
+                              onPressed: quantity > 1
+                                  ? () {
+                                      setState(() {
+                                        quantity--;
+                                      });
+                                    }
+                                  : null,
+                              icon: const Icon(Icons.remove, size: 24),
+                              color: quantity > 1
+                                  ? const Color(0xFF457C3B)
+                                  : Colors.grey[300],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Total price section
+                      Column(
+                        children: [
+                          Text(
+                            'المجموع',
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${totalPrice.toStringAsFixed(0)} ل.س',
+                            style: GoogleFonts.cairo(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF457C3B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      // Add to cart button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            cartService.addToCart(product, quantity: quantity);
+                            Navigator.pop(dialogContext);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'تمت الإضافة إلى السلة ✓',
+                                  style: GoogleFonts.cairo(),
+                                ),
+                                backgroundColor: const Color(0xFF457C3B),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF457C3B),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.shopping_cart, size: 20),
+                          label: Text(
+                            'إضافة للسلة',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Cancel button
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(
+                          'إلغاء',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -439,7 +614,7 @@ class CategoryProductsScreen extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () {
               context.read<ProductsCubit>().loadProducts(
-                categoryId: categoryId,
+                categoryId: widget.categoryId,
               );
             },
             icon: const Icon(Icons.refresh),

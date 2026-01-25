@@ -214,7 +214,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                               errorWidget: (context, url, error) => Container(
                                 color: AppColors.primaryGreen.withOpacity(0.1),
                                 child: Icon(
-                                  Icons.category,
+                                  Icons.eco,
                                   size: 50,
                                   color: AppColors.primaryGreen,
                                 ),
@@ -223,7 +223,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           : Container(
                               color: AppColors.primaryGreen.withOpacity(0.1),
                               child: Icon(
-                                Icons.category,
+                                Icons.eco,
                                 size: 50,
                                 color: AppColors.primaryGreen,
                               ),
@@ -308,7 +308,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.category_outlined,
+              Icons.nature_outlined,
               size: 60,
               color: Colors.grey[400],
             ),

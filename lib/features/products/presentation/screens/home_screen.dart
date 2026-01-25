@@ -140,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Products Grid
                 _buildProductsGrid(),
                 // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                const SliverToBoxAdapter(child: SizedBox(height: 12)),
               ],
             ),
           ),
@@ -164,47 +164,92 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (context) => const CartScreen()),
               );
             },
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  Icons.shopping_cart_outlined,
-                  color: Colors.grey[700],
-                  size: 24,
-                ),
-                Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      cartCount > 99 ? '99+' : '$cartCount',
-                      style: GoogleFonts.cairo(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Colors.black,
+                      size: 20,
                     ),
                   ),
-                ),
-              ],
+                  if (cartCount > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           // Notifications Icon
           GestureDetector(
             onTap: () {
               // Show notifications
             },
-            child: Icon(
-              Icons.notifications_outlined,
-              color: Colors.grey[700],
-              size: 24,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
+                  // Red dot for notifications
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -434,7 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
           // 3 Dots Button (left/start)
@@ -509,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         return Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
+          margin: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             children: [
               // Green Banner Header
@@ -517,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 12,
+                  vertical: 8,
                 ),
                 decoration: const BoxDecoration(
                   color: AppColors.primaryGreen,
@@ -597,70 +642,94 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Container(
-        width: 110,
-        margin: const EdgeInsets.only(left: 12),
+        width: 140,
+        margin: const EdgeInsets.only(left: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Stack(
           children: [
-            // Product Image
-            Expanded(
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+            // Background Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: product.imageUrl,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                cacheManager: CustomCacheManager.instance,
+                placeholder: (context, url) => ShimmerLoading.offerCard(),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[300],
+                  child: Icon(Icons.image, color: Colors.grey[400], size: 40),
                 ),
-                child: CachedNetworkImage(
-                  imageUrl: product.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  cacheManager: CustomCacheManager.instance,
-                  placeholder: (context, url) => ShimmerLoading.offerCard(),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[100],
-                    child: Icon(Icons.image, color: Colors.grey[400]),
+              ),
+            ),
+            // Gradient overlay at bottom
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
                   ),
                 ),
-              ),
-            ),
-            // Product Name
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(
-                product.nameAr,
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            // Price Tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${product.price.toStringAsFixed(0)} ل.س',
-                style: GoogleFonts.cairo(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Product Name
+                    Text(
+                      product.nameAr,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    // Price
+                    Text(
+                      '${product.price.toStringAsFixed(0)} ل.س',
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -678,7 +747,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Section Title
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'التصنيفات',
               style: GoogleFonts.cairo(
@@ -717,41 +786,34 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCard(Category category) {
-    // Icon based on category name - more beautiful and expressive
-    IconData iconData = Icons.category;
-    List<Color> gradientColors = [
-      AppColors.primaryGreen,
-      AppColors.primaryGreen.withOpacity(0.7),
-    ];
-    Color iconColor = Colors.white;
+    // Check if this is vegetables category (handles both spellings: الخضروات and الخصروات)
+    final bool isVegetables =
+        category.nameAr.contains('خ') && category.nameAr.contains('روات');
 
-    // Vegetables & Fruits - Beautiful green gradient with leaf/apple icons
-    if (category.nameAr.contains('خضار')) {
-      iconData = Icons.spa; // Beautiful leaf/nature icon
-      gradientColors = [
-        const Color(0xFF4CAF50), // Vibrant green
-        const Color(0xFF81C784), // Light green
-      ];
+    // Icon and colors based on category name
+    IconData iconData = Icons.category;
+    Color iconColor = const Color(0xFF4CAF50);
+    Color backgroundColor = const Color(0xFFE8F5E9);
+
+    // Vegetables & Fruits - Beautiful icons with matching colors
+    if (isVegetables) {
+      iconData = Icons.eco; // Eco/leaf icon - matches the design
+      iconColor = const Color(0xFF4CAF50); // Green
+      backgroundColor = const Color(0xFFE8F5E9); // Light green
     } else if (category.nameAr.contains('فواكه')) {
       iconData = Icons.apple; // Apple icon for fruits
-      gradientColors = [
-        const Color(0xFFE91E63), // Pink/Red
-        const Color(0xFFF48FB1), // Light pink
-      ];
+      iconColor = const Color(0xFFFF9800); // Orange
+      backgroundColor = const Color(0xFFFFE0B2); // Light orange
     } else if (category.nameAr.contains('غذائية') ||
         category.nameAr.contains('طعام')) {
-      iconData = Icons.shopping_basket_outlined; // Basket icon
-      gradientColors = [
-        const Color(0xFFFF9800), // Orange
-        const Color(0xFFFFB74D), // Light orange
-      ];
+      iconData = Icons.shopping_basket; // Basket icon
+      iconColor = const Color(0xFFFF9800); // Orange
+      backgroundColor = const Color(0xFFFFE0B2); // Light orange
     } else if (category.nameAr.contains('منظفات') ||
         category.nameAr.contains('شخصية')) {
-      iconData = Icons.cleaning_services_outlined; // Cleaning icon
-      gradientColors = [
-        const Color(0xFF9C27B0), // Purple
-        const Color(0xFFBA68C8), // Light purple
-      ];
+      iconData = Icons.person_outline; // Person icon
+      iconColor = const Color(0xFFE91E63); // Pink
+      backgroundColor = const Color(0xFFFCE4EC); // Light pink
     }
 
     return Expanded(
@@ -762,38 +824,46 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Circular icon container with gradient
+              // Icon container with colored background
               Container(
-                width: 70,
-                height: 70,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
+                  color: backgroundColor,
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradientColors[0].withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Center(
-                  child: Icon(iconData, color: iconColor, size: 36),
+                  child: isVegetables
+                      ? Image.asset(
+                          'assets/nature.png',
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.contain,
+                        )
+                      : Icon(iconData, color: iconColor, size: 28),
                 ),
               ),
               const SizedBox(height: 12),
+              // Category name
               Text(
                 category.nameAr,
                 style: GoogleFonts.cairo(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[800],
                 ),
@@ -810,7 +880,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildFeaturedTitle() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Center(
         child: Text(
           'المنتجات المميزة',
@@ -1015,18 +1085,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          _cartService.addToCart(product);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'تمت الإضافة إلى السلة ✓',
-                                style: GoogleFonts.cairo(),
-                              ),
-                              backgroundColor: const Color(0xFF457C3B),
-                              behavior: SnackBarBehavior.floating,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
+                          _showQuantityDialog(product);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF457C3B),
@@ -1057,6 +1116,205 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// Show quantity selector dialog
+  /// عرض نافذة اختيار الكمية
+  void _showQuantityDialog(Product product) {
+    int quantity = 1;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final double totalPrice = product.price * quantity;
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Close button
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.grey),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Title
+                    Text(
+                      'تحديد الكمية',
+                      style: GoogleFonts.cairo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Subtitle
+                    Text(
+                      'اختر كمية برتقال ابو صرة بالكيلوغرام',
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    // Quantity selector
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Plus button
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                quantity++;
+                              });
+                            },
+                            icon: const Icon(Icons.add, size: 24),
+                            color: const Color(0xFF457C3B),
+                          ),
+                        ),
+                        const SizedBox(width: 32),
+                        // Quantity display
+                        Column(
+                          children: [
+                            Text(
+                              '$quantity',
+                              style: GoogleFonts.cairo(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF457C3B),
+                              ),
+                            ),
+                            Text(
+                              'كيلوغرام',
+                              style: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 32),
+                        // Minus button
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            onPressed: quantity > 1
+                                ? () {
+                                    setState(() {
+                                      quantity--;
+                                    });
+                                  }
+                                : null,
+                            icon: const Icon(Icons.remove, size: 24),
+                            color: quantity > 1
+                                ? const Color(0xFF457C3B)
+                                : Colors.grey[300],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Total price section
+                    Column(
+                      children: [
+                        Text(
+                          'المجموع',
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${totalPrice.toStringAsFixed(0)} ل.س',
+                          style: GoogleFonts.cairo(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF457C3B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    // Add to cart button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          _cartService.addToCart(product, quantity: quantity);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'تمت الإضافة إلى السلة ✓',
+                                style: GoogleFonts.cairo(),
+                              ),
+                              backgroundColor: const Color(0xFF457C3B),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF457C3B),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.shopping_cart, size: 20),
+                        label: Text(
+                          'إضافة للسلة',
+                          style: GoogleFonts.cairo(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Cancel button
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'إلغاء',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
