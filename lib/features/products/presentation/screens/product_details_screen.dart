@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cart_service.dart';
+import '../../../../core/services/settings_service.dart';
 import '../../domain/entities/product.dart';
 
 /// Product Details Screen
@@ -20,6 +21,20 @@ class ProductDetailsScreen extends StatefulWidget {
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   final CartService _cartService = CartService();
   int _quantity = 1;
+  String _currencySymbol = 'ل.س';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrency();
+  }
+
+  Future<void> _loadCurrency() async {
+    final symbol = await SettingsService.getCurrencySymbol();
+    if (mounted) {
+      setState(() => _currencySymbol = symbol);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +209,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Row(
               children: [
                 Text(
-                  '${widget.product.price.toStringAsFixed(0)} ج.م',
+                  '${widget.product.price.toStringAsFixed(0)} $_currencySymbol',
                   style: GoogleFonts.cairo(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -350,7 +365,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   ),
                 ),
                 Text(
-                  '${totalPrice.toStringAsFixed(0)} ج.م',
+                  '${totalPrice.toStringAsFixed(0)} $_currencySymbol',
                   style: GoogleFonts.cairo(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,

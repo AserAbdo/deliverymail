@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/constants/app_colors.dart';
 import 'core/di/injection_container.dart' as di;
+import 'core/services/local_notification_service.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 
 Future<void> main() async {
@@ -21,6 +22,15 @@ Future<void> main() async {
     print('   2. Add GoogleService-Info.plist to ios/Runner/');
     print('   3. See FIREBASE_QUICK_START.md for setup instructions');
     print('   Error: $e');
+  }
+
+  // Initialize local notifications
+  try {
+    await LocalNotificationService.initialize();
+    await LocalNotificationService.requestPermissions();
+    print('✅ Local notifications initialized successfully');
+  } catch (e) {
+    print('⚠️ Local notifications initialization failed: $e');
   }
 
   // Initialize dependency injection

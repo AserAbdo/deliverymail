@@ -8,6 +8,7 @@ class Banner {
   final int id;
   final String title;
   final String? subtitle;
+  final String description;
   final String image;
   final String? link;
   final bool isActive;
@@ -17,6 +18,7 @@ class Banner {
     required this.id,
     required this.title,
     this.subtitle,
+    this.description = '',
     required this.image,
     this.link,
     this.isActive = true,
@@ -33,7 +35,8 @@ class Banner {
     return Banner(
       id: json['id'] ?? 0,
       title: json['title'] ?? json['title_ar'] ?? '',
-      subtitle: json['subtitle'] ?? json['description'],
+      subtitle: json['subtitle'],
+      description: json['description'] ?? '',
       image: imageUrl,
       link: json['link'] ?? json['url'],
       isActive: json['is_active'] == 1 || json['is_active'] == true,

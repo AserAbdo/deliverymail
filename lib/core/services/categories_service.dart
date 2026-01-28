@@ -12,6 +12,7 @@ class Category {
   final String? description;
   final bool isActive;
   final int productsCount;
+  final List<Category>? children;
 
   Category({
     required this.id,
@@ -21,6 +22,7 @@ class Category {
     this.description,
     this.isActive = true,
     this.productsCount = 0,
+    this.children,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,14 @@ class Category {
     String? imageUrl = json['image'] ?? json['image_url'];
     if (imageUrl != null && !imageUrl.startsWith('http')) {
       imageUrl = '$baseUrl${imageUrl.startsWith('/') ? '' : '/'}$imageUrl';
+    }
+
+    // Parse subcategories if they exist
+    List<Category>? subcategories;
+    if (json['children'] != null && json['children'] is List) {
+      subcategories = (json['children'] as List)
+          .map((child) => Category.fromJson(child))
+          .toList();
     }
 
     return Category(
@@ -38,6 +48,7 @@ class Category {
       description: json['description'] ?? json['description_ar'],
       isActive: json['is_active'] == 1 || json['is_active'] == true,
       productsCount: json['products_count'] ?? 0,
+      children: subcategories,
     );
   }
 }

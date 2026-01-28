@@ -19,7 +19,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
-  String _currencySymbol = 'ج.م';
+  String _currencySymbol = 'ل.س';
 
   @override
   void initState() {
@@ -68,7 +68,7 @@ class _CartScreenState extends State<CartScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
-            if (_cartService.items.isNotEmpty)
+            if (_cartService.items.isEmpty)
               IconButton(
                 icon: const Icon(Icons.history, color: Colors.grey),
                 onPressed: _showOrderHistory,
@@ -663,7 +663,7 @@ class _OrderHistoryModalState extends State<OrderHistoryModal> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${order.price} ج.م',
+                        '${order.price} ل.س',
                         style: GoogleFonts.cairo(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

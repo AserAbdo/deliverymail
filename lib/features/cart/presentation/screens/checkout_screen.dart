@@ -7,6 +7,9 @@ import '../../../../core/services/settings_service.dart';
 import '../../../../core/services/coupon_service.dart';
 import '../../../../core/services/order_service.dart';
 import '../../../../core/services/checkout_data_service.dart';
+import '../../../../core/services/order_history_service.dart';
+import '../../../../core/services/local_notification_service.dart';
+import '../../../../core/services/notifications_storage_service.dart';
 
 /// Checkout Screen
 /// شاشة إتمام الطلب
@@ -34,7 +37,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isLoadingGovernorates = true;
   bool _isValidatingCoupon = false;
   bool _isSubmitting = false;
-  String _currencySymbol = 'ج.م';
+  String _currencySymbol = 'ل.س';
 
   // Coupon
   Coupon? _appliedCoupon;
@@ -204,6 +207,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (response.success) {
       // Save governorate for future orders
       await GovernoratesService.saveSelectedGovernorate(_selectedGovernorate!);
+
+      // Save order items to history
+      for (final item in _cartService.items) {
+        await OrderHistoryService.addOrder(
+          productId: item.product.id.toString(),
+          productName: item.product.nameAr,
+          productImage: item.product.imageUrl,
+          price: item.product.price,
+          quantity: item.quantity,
+        );
+      }
+
+      // Save notification to storage
+      await NotificationsStorageService.saveNotification(
+        title: 'تم إرسال طلبك بنجاح! 🎉',
+        message: response.orderId != null
+            ? 'رقم الطلب: ${response.orderId} - ${response.message}'
+            : response.message,
+        orderId: response.orderId?.toString(),
+        type: 'order_success',
+      );
+
+      // Show local notification
+      await LocalNotificationService.showOrderSuccessNotification(
+        orderId: response.orderId?.toString() ?? 'N/A',
+        message: response.message,
+      );
 
       // Clear cart and show success
       _cartService.clearCart();

@@ -8,14 +8,17 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/categories_service.dart';
 import '../../../../core/services/governorates_service.dart';
+import '../../../../core/services/banners_service.dart';
+import '../../../../core/services/notifications_storage_service.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
-import '../../../../core/utils/cache_manager.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../cart/presentation/screens/cart_screen.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
+import '../widgets/product_card.dart';
+import '../widgets/quantity_selector_dialog.dart';
 import 'product_details_screen.dart';
 import 'category_products_screen.dart';
 
@@ -41,9 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
 
+  // Banners
+  List<Banner> _banners = [];
+  bool _isLoadingBanners = true;
+  final PageController _bannerPageController = PageController();
+  Timer? _bannerAutoScrollTimer;
+  int _currentBannerPage = 0;
+
   // Governorate
   List<Governorate> _governorates = [];
   Governorate? _selectedGovernorate;
+
+  // Notifications
+  int _unreadNotificationsCount = 0;
 
   // Cubit instance
   ProductsCubit? _productsCubit;
@@ -56,8 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+    _loadUnreadNotificationsCount();
     _searchController.addListener(_onSearchChanged);
     _cartService.addListener(_onCartChanged);
+    _startBannerAutoScroll();
   }
 
   void _onCartChanged() {
@@ -65,8 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    await _loadCategories();
-    await _loadGovernorates();
+    await Future.wait([_loadCategories(), _loadGovernorates(), _loadBanners()]);
   }
 
   Future<void> _loadGovernorates() async {
@@ -115,6 +129,51 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadBanners() async {
+    try {
+      final banners = await BannersService.getBanners();
+      if (mounted) {
+        setState(() {
+          _banners = banners;
+          _isLoadingBanners = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingBanners = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadUnreadNotificationsCount() async {
+    final count = await NotificationsStorageService.getUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotificationsCount = count;
+      });
+    }
+  }
+
+  void _startBannerAutoScroll() {
+    _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 4), (
+      timer,
+    ) {
+      if (_banners.isEmpty || !mounted) return;
+
+      _currentBannerPage = (_currentBannerPage + 1) % _banners.length;
+
+      if (_bannerPageController.hasClients) {
+        _bannerPageController.animateToPage(
+          _currentBannerPage,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
   void _onSearchChanged() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -158,6 +217,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     _debounceTimer?.cancel();
+    _bannerAutoScrollTimer?.cancel();
+    _bannerPageController.dispose();
     _cartService.removeListener(_onCartChanged);
     _productsCubit = null;
     _searchCubit?.close(); // Close search cubit if exists
@@ -187,25 +248,23 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.white,
               body: Stack(
                 children: [
-                  SafeArea(
-                    child: CustomScrollView(
-                      slivers: [
-                        // Header with Logo, Login Button, Cart
-                        SliverToBoxAdapter(child: _buildHeader()),
-                        // Search Bar
-                        SliverToBoxAdapter(child: _buildSearchBar()),
-                        // Special Offers Section
-                        SliverToBoxAdapter(child: _buildSpecialOffersSection()),
-                        // Categories Section
-                        SliverToBoxAdapter(child: _buildCategoriesSection()),
-                        // Featured Products Section Title
-                        SliverToBoxAdapter(child: _buildFeaturedTitle()),
-                        // Products Grid
-                        _buildProductsGrid(),
-                        // Bottom padding
-                        const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                      ],
-                    ),
+                  CustomScrollView(
+                    slivers: [
+                      // Pinned App Bar
+                      _buildSliverAppBar(),
+                      // Search Bar
+                      SliverToBoxAdapter(child: _buildSearchBar()),
+                      // Special Offers Section
+                      SliverToBoxAdapter(child: _buildSpecialOffersSection()),
+                      // Categories Section
+                      SliverToBoxAdapter(child: _buildCategoriesSection()),
+                      // Featured Products Section Title
+                      SliverToBoxAdapter(child: _buildFeaturedTitle()),
+                      // Products Grid
+                      _buildProductsGrid(),
+                      // Bottom padding
+                      const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    ],
                   ),
                   // Backdrop overlay when search is active
                   if (_showSearchSuggestions)
@@ -230,159 +289,223 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildSliverAppBar() {
     final cartCount = _cartService.itemCount;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-      decoration: const BoxDecoration(color: Colors.white),
-      child: Row(
-        children: [
-          // Cart Icon with Badge (left/start)
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.shopping_cart_outlined,
-                      color: Colors.black,
-                      size: 20,
+
+    return SliverAppBar(
+      pinned: true,
+      floating: false,
+      snap: false,
+      elevation: 0,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      toolbarHeight: 60,
+      automaticallyImplyLeading: false,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                // Cart Icon with Badge (left/start)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CartScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey[200]!),
                     ),
-                  ),
-                  if (cartCount > 0)
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Center(
+                          child: Icon(
+                            Icons.shopping_cart_outlined,
+                            color: Colors.black,
+                            size: 20,
+                          ),
                         ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Notifications Icon
-          GestureDetector(
-            onTap: () {
-              // Show notifications
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.black,
-                      size: 20,
+                        if (cartCount > 0)
+                          Positioned(
+                            right: 4,
+                            top: 4,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  // Red dot for notifications
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Login Button (rectangular)
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGreen,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'تسجيل الدخول',
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
                 ),
-              ),
-            ),
-          ),
-          const Spacer(),
-          // Logo with Gradient
-          ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [
-                Color(0xFFD4A853), // Gold
-                Color(0xFF1e5d2c), // Dark green
+                const SizedBox(width: 8),
+                // Notifications Icon
+                GestureDetector(
+                  onTap: () {
+                    _showNotifications();
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Center(
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                        ),
+                        if (_unreadNotificationsCount > 0)
+                          Positioned(
+                            right: 6,
+                            top: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                _unreadNotificationsCount > 9
+                                    ? '9+'
+                                    : _unreadNotificationsCount.toString(),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Governorate Selector
+                GestureDetector(
+                  onTap: _showGovernorateDropdown,
+                  child: Container(
+                    height: 44, // Fixed height for consistency
+                    constraints: const BoxConstraints(
+                      minWidth: 120,
+                      maxWidth: 180,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _selectedGovernorate != null
+                          ? Colors.white
+                          : Colors.grey[50],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _selectedGovernorate != null
+                            ? AppColors.primaryGreen.withOpacity(0.3)
+                            : Colors.grey[300]!,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: _selectedGovernorate != null
+                              ? AppColors.primaryGreen
+                              : Colors.grey[400],
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _selectedGovernorate != null &&
+                                    _selectedGovernorate!.name.isNotEmpty
+                                ? _selectedGovernorate!.name
+                                : 'اختر محافظة',
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              fontWeight: _selectedGovernorate != null
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: _selectedGovernorate != null
+                                  ? Colors.grey[900]
+                                  : Colors.grey[500],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          color: _selectedGovernorate != null
+                              ? AppColors.primaryGreen
+                              : Colors.grey[600],
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                // Logo with Dark Blue Color
+                Text(
+                  'دليفري مول',
+                  style: GoogleFonts.cairo(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF003366), // Dark blue
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Menu Icon (opens drawer) - right/end
+                GestureDetector(
+                  onTap: () => _showMenuDrawer(),
+                  child: Icon(Icons.menu, color: Colors.grey[700], size: 26),
+                ),
               ],
-            ).createShader(bounds),
-            child: Text(
-              'دليفري مول',
-              style: GoogleFonts.cairo(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
             ),
           ),
-          const SizedBox(width: 12),
-          // Menu Icon (opens drawer) - right/end
-          GestureDetector(
-            onTap: () => _showMenuDrawer(),
-            child: Icon(Icons.menu, color: Colors.grey[700], size: 26),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -488,15 +611,47 @@ class _HomeScreenState extends State<HomeScreen> {
                         value: 'اللاذقية - شارع الجمهورية',
                       ),
                       const Spacer(),
-                      // Back to Shopping Button
+                      // Login Button
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryGreen,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.login),
+                          label: Text(
+                            'تسجيل الدخول',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Back to Shopping Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primaryGreen,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: AppColors.primaryGreen),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -560,100 +715,279 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
+      ),
       child: Row(
         children: [
-          // Governorate Dropdown Button
-          GestureDetector(
-            onTap: _showGovernorateDropdown,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[300]!, width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.primaryGreen,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _selectedGovernorate?.name ?? 'المحافظة',
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _selectedGovernorate != null
-                          ? Colors.grey[800]
-                          : Colors.grey[500],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: Colors.grey[600],
-                    size: 18,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Search Input
+          Icon(Icons.search, color: Colors.grey[500], size: 22),
+          const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey[300]!, width: 1),
+            child: TextField(
+              controller: _searchController,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              decoration: InputDecoration(
+                hintText: 'ابحث بأي طريقة... (بحث ذكي)',
+                hintStyle: GoogleFonts.cairo(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: Colors.grey[500], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      textDirection: TextDirection.rtl,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        hintText: 'ابحث بأي طريقة... (بحث ذكي)',
-                        hintStyle: GoogleFonts.cairo(
-                          color: Colors.grey[400],
-                          fontSize: 13,
-                        ),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                        ),
-                      ),
-                      style: GoogleFonts.cairo(fontSize: 13),
-                    ),
-                  ),
-                  if (_searchController.text.isNotEmpty)
-                    GestureDetector(
-                      onTap: _clearSearch,
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.grey[500],
-                        size: 18,
-                      ),
-                    ),
-                ],
-              ),
+              style: GoogleFonts.cairo(fontSize: 14),
             ),
           ),
+          if (_searchQuery.isNotEmpty)
+            GestureDetector(
+              onTap: _clearSearch,
+              child: Icon(Icons.clear, color: Colors.grey[600], size: 20),
+            ),
         ],
       ),
     );
+  }
+
+  /// Show notifications
+  void _showNotifications() async {
+    // Load notifications
+    final notifications = await NotificationsStorageService.getNotifications();
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_active,
+                      color: AppColors.primaryGreen,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'الإشعارات',
+                      style: GoogleFonts.cairo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const Spacer(),
+                    if (notifications.isNotEmpty)
+                      TextButton(
+                        onPressed: () async {
+                          await NotificationsStorageService.markAllAsRead();
+                          await _loadUnreadNotificationsCount();
+                          Navigator.pop(context);
+                          _showNotifications();
+                        },
+                        child: Text(
+                          'وضع علامة مقروء للكل',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Notifications List
+              Expanded(
+                child: notifications.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notifications_off_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'لا توجد إشعارات حالياً',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: notifications.length,
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final notification = notifications[index];
+                          final isUnread = !notification.isRead;
+
+                          return Dismissible(
+                            key: Key(notification.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              color: Colors.red,
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.only(left: 20),
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                            onDismissed: (direction) async {
+                              await NotificationsStorageService.deleteNotification(
+                                notification.id,
+                              );
+                              await _loadUnreadNotificationsCount();
+                            },
+                            child: ListTile(
+                              tileColor: isUnread
+                                  ? AppColors.primaryGreen.withOpacity(0.05)
+                                  : null,
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: notification.type == 'order_success'
+                                      ? AppColors.primaryGreen.withOpacity(0.1)
+                                      : Colors.grey[100],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  notification.type == 'order_success'
+                                      ? Icons.check_circle
+                                      : Icons.notifications,
+                                  color: notification.type == 'order_success'
+                                      ? AppColors.primaryGreen
+                                      : Colors.grey[600],
+                                  size: 24,
+                                ),
+                              ),
+                              title: Text(
+                                notification.title,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 14,
+                                  fontWeight: isUnread
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    notification.message,
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatNotificationTime(
+                                      notification.timestamp,
+                                    ),
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 11,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              trailing: isUnread
+                                  ? Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryGreen,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    )
+                                  : null,
+                              onTap: () async {
+                                if (isUnread) {
+                                  await NotificationsStorageService.markAsRead(
+                                    notification.id,
+                                  );
+                                  await _loadUnreadNotificationsCount();
+                                  Navigator.pop(context);
+                                  _showNotifications();
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).then((_) {
+      // Refresh count when bottom sheet closes
+      _loadUnreadNotificationsCount();
+    });
+  }
+
+  String _formatNotificationTime(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return 'الآن';
+    } else if (difference.inMinutes < 60) {
+      return 'منذ ${difference.inMinutes} دقيقة';
+    } else if (difference.inHours < 24) {
+      return 'منذ ${difference.inHours} ساعة';
+    } else if (difference.inDays < 7) {
+      return 'منذ ${difference.inDays} يوم';
+    } else {
+      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+    }
   }
 
   /// Show governorate dropdown
@@ -670,6 +1004,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -678,285 +1013,292 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'اختر المحافظة',
-                  style: GoogleFonts.cairo(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-              ),
-              const Divider(height: 1),
-              // List
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _governorates.length,
-                  itemBuilder: (context, index) {
-                    final gov = _governorates[index];
-                    final isSelected = _selectedGovernorate?.id == gov.id;
-                    return ListTile(
-                      selected: isSelected,
-                      selectedTileColor: AppColors.primaryGreen.withOpacity(
-                        0.1,
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'اختر المحافظة',
+                      style: GoogleFonts.cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
                       ),
-                      onTap: () async {
-                        // Save to SharedPreferences
-                        await GovernoratesService.saveSelectedGovernorate(gov);
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  // List
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: _governorates.length,
+                      padding: const EdgeInsets.only(bottom: 16),
+                      itemBuilder: (context, index) {
+                        final gov = _governorates[index];
+                        final isSelected = _selectedGovernorate?.id == gov.id;
+                        return ListTile(
+                          selected: isSelected,
+                          selectedTileColor: AppColors.primaryGreen.withOpacity(
+                            0.1,
+                          ),
+                          onTap: () async {
+                            // Save to SharedPreferences
+                            await GovernoratesService.saveSelectedGovernorate(
+                              gov,
+                            );
 
-                        setState(() {
-                          _selectedGovernorate = gov;
-                        });
+                            setState(() {
+                              _selectedGovernorate = gov;
+                            });
 
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '${gov.name} تم اختيارها',
-                                style: GoogleFonts.cairo(),
-                              ),
-                              backgroundColor: AppColors.primaryGreen,
-                              behavior: SnackBarBehavior.floating,
+                            if (mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'تم اختيار ${gov.name}',
+                                    style: GoogleFonts.cairo(),
+                                  ),
+                                  backgroundColor: AppColors.primaryGreen,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          title: Text(
+                            gov.name,
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              color: isSelected
+                                  ? AppColors.primaryGreen
+                                  : Colors.grey[800],
                             ),
-                          );
-                        }
+                          ),
+                          subtitle: Text(
+                            'رسوم التوصيل: ${gov.deliveryFee.toStringAsFixed(0)} ل.س',
+                            style: GoogleFonts.cairo(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primaryGreen,
+                                  size: 24,
+                                )
+                              : null,
+                        );
                       },
-                      title: Text(
-                        gov.name,
-                        style: GoogleFonts.cairo(
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w600,
-                          color: isSelected
-                              ? AppColors.primaryGreen
-                              : Colors.grey[800],
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? Icon(
-                              Icons.check_circle,
-                              color: AppColors.primaryGreen,
-                              size: 24,
-                            )
-                          : null,
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildSpecialOffersSection() {
-    return BlocBuilder<ProductsCubit, ProductsState>(
-      builder: (context, state) {
-        List<Product> products = [];
-        if (state is ProductsLoaded) {
-          // Take first 5 products as special offers
-          products = state.products.take(5).toList();
-        }
+    if (_isLoadingBanners) {
+      return Container(
+        height: 180,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            children: [
-              // Green Banner Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryGreen,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                ),
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'عروض مميزة',
-                      style: GoogleFonts.cairo(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Offers List
-              Container(
-                height: 150,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.1),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: state is ProductsLoading
-                    ? ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: 5,
-                        itemBuilder: (context, index) {
-                          return ShimmerLoading.offerCard();
-                        },
-                      )
-                    : products.isEmpty
-                    ? Center(
-                        child: Text(
-                          'لا توجد عروض حالياً',
-                          style: GoogleFonts.cairo(color: Colors.grey),
-                        ),
-                      )
-                    : ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: products.length,
-                        itemBuilder: (context, index) {
-                          return _buildOfferCard(products[index]);
-                        },
-                      ),
-              ),
-            ],
+    if (_banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      height: 180,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Stack(
+        children: [
+          // Banner PageView
+          PageView.builder(
+            controller: _bannerPageController,
+            itemCount: _banners.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentBannerPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return _buildBannerCard(_banners[index]);
+            },
           ),
-        );
-      },
+          // Dots Indicator
+          if (_banners.length > 1)
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  _banners.length,
+                  (index) => Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentBannerPage == index
+                          ? AppColors.primaryGreen
+                          : Colors.white.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildOfferCard(Product product) {
+  Widget _buildBannerCard(Banner banner) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(product: product),
-          ),
-        );
+        if (banner.link != null && banner.link!.isNotEmpty) {
+          // Handle banner link navigation
+          print('Banner clicked: ${banner.link}');
+        }
       },
       child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(left: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            // Background Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: product.imageUrl,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Banner Image
+              CachedNetworkImage(
+                imageUrl: banner.image,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
-                cacheManager: CustomCacheManager.instance,
-                placeholder: (context, url) => ShimmerLoading.offerCard(),
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
                 errorWidget: (context, url, error) => Container(
                   color: Colors.grey[300],
-                  child: Icon(Icons.image, color: Colors.grey[400], size: 40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_not_supported,
+                        size: 48,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        banner.title,
+                        style: GoogleFonts.cairo(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            // Gradient overlay at bottom
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Product Name
-                    Text(
-                      product.nameAr,
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+              // Gradient Overlay
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    // Price
-                    Text(
-                      '${product.price.toStringAsFixed(0)} ل.س',
-                      style: GoogleFonts.cairo(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        banner.title,
+                        style: GoogleFonts.cairo(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                      if (banner.description.isNotEmpty)
+                        Text(
+                          banner.description,
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1056,6 +1398,7 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (_) => CategoryProductsScreen(
                 categoryId: category.id,
                 categoryName: category.nameAr,
+                subcategories: category.children,
               ),
             ),
           );
@@ -1175,7 +1518,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProductCard(Product product) {
-    return GestureDetector(
+    return ProductCard(
+      product: product,
       onTap: () {
         Navigator.push(
           context,
@@ -1184,383 +1528,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Product Image
-            Expanded(
-              flex: 5,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      cacheManager: CustomCacheManager.instance,
-                      placeholder: (context, url) =>
-                          ShimmerLoading.productCard(),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[100],
-                        child: Icon(
-                          Icons.image_not_supported_outlined,
-                          color: Colors.grey[400],
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Organic Badge
-                  if (product.isOrganic)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF457C3B),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'عضوي',
-                          style: GoogleFonts.cairo(
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            // Product Info
-            Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Product Name
-                    Text(
-                      product.nameAr,
-                      style: GoogleFonts.cairo(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A1A),
-                        height: 1.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // Price per unit label
-                    Text(
-                      'السعر للكيلة',
-                      style: GoogleFonts.cairo(
-                        fontSize: 12,
-                        color: const Color(0xFF457C3B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Price with unit
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          product.price.toStringAsFixed(0),
-                          style: GoogleFonts.cairo(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1A1A1A),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'ل.س/كغ',
-                          style: GoogleFonts.cairo(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Add to Cart Button - Full Width
-                    SizedBox(
-                      width: double.infinity,
-                      height: 40,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          _showQuantityDialog(product);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF457C3B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        icon: const Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 18,
-                        ),
-                        label: Text(
-                          'أضف للسلة',
-                          style: GoogleFonts.cairo(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Show quantity selector dialog
-  /// عرض نافذة اختيار الكمية
-  void _showQuantityDialog(Product product) {
-    int quantity = 1;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final double totalPrice = product.price * quantity;
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Close button
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Title
-                    Text(
-                      'تحديد الكمية',
-                      style: GoogleFonts.cairo(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Subtitle
-                    Text(
-                      'اختر كمية ${product.nameAr} بالكيلوغرام',
-                      style: GoogleFonts.cairo(
-                        fontSize: 13,
-                        color: Colors.grey[500],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    // Quantity selector
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Plus button - Square
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              quantity++;
-                            });
-                          },
-                          child: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              size: 24,
-                              color: Color(0xFF457C3B),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 32),
-                        // Quantity display
-                        Column(
-                          children: [
-                            Text(
-                              '$quantity',
-                              style: GoogleFonts.cairo(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF457C3B),
-                              ),
-                            ),
-                            Text(
-                              'كيلوغرام',
-                              style: GoogleFonts.cairo(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 32),
-                        // Minus button - Square
-                        InkWell(
-                          onTap: quantity > 1
-                              ? () {
-                                  setState(() {
-                                    quantity--;
-                                  });
-                                }
-                              : null,
-                          child: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              Icons.remove,
-                              size: 24,
-                              color: quantity > 1
-                                  ? const Color(0xFF457C3B)
-                                  : Colors.grey[300],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Total price section
-                    Column(
-                      children: [
-                        Text(
-                          'المجموع',
-                          style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${totalPrice.toStringAsFixed(0)} ل.س',
-                          style: GoogleFonts.cairo(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF457C3B),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Add to cart button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _cartService.addToCart(product, quantity: quantity);
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'تمت الإضافة إلى السلة ✓',
-                                style: GoogleFonts.cairo(),
-                              ),
-                              backgroundColor: const Color(0xFF457C3B),
-                              behavior: SnackBarBehavior.floating,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF457C3B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.shopping_cart, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'إضافة للسلة',
-                              style: GoogleFonts.cairo(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Cancel button
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'إلغاء',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+      onAddToCart: () {
+        QuantitySelectorDialog.show(
+          context: context,
+          product: product,
+          cartService: _cartService,
         );
       },
     );
@@ -1712,8 +1684,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     setState(() {
                                       _showSearchSuggestions = false;
                                     });
-                                    // Show quantity dialog instead of navigating
-                                    _showQuantityDialog(product);
+                                    // Show quantity dialog
+                                    QuantitySelectorDialog.show(
+                                      context: context,
+                                      product: product,
+                                      cartService: _cartService,
+                                    );
                                   },
                                   leading: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),

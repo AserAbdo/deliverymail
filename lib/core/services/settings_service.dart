@@ -13,7 +13,7 @@ class Currency {
   factory Currency.fromJson(Map<String, dynamic> json) {
     return Currency(
       code: json['code'] ?? 'EGP',
-      symbol: json['symbol'] ?? 'ج.م',
+      symbol: json['symbol'] ?? 'ل.س',
     );
   }
 }
@@ -39,7 +39,7 @@ class AppSettings {
       companyName: json['company_name'] ?? 'ديليفري مول',
       currency: json['currency'] != null
           ? Currency.fromJson(json['currency'])
-          : Currency(code: 'EGP', symbol: 'ج.م'),
+          : Currency(code: 'EGP', symbol: 'ل.س'),
       phone: json['phone'],
       whatsapp: json['whatsapp'],
       footerText: json['footer_text'],
@@ -99,7 +99,7 @@ class SettingsService {
     // Return default settings
     return AppSettings(
       companyName: 'ديليفري مول',
-      currency: Currency(code: 'EGP', symbol: 'ج.م'),
+      currency: Currency(code: 'EGP', symbol: 'ل.س'),
     );
   }
 

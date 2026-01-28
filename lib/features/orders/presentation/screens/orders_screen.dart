@@ -18,7 +18,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool _isLoading = true;
   bool _hasPhone = false;
   List<Order> _orders = [];
-  String _currencySymbol = 'ج.م';
+  String _currencySymbol = 'ل.س';
   final _phoneController = TextEditingController();
 
   @override

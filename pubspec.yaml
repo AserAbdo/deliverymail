@@ -63,6 +63,9 @@ dependencies:
   firebase_auth: ^5.3.3
   google_sign_in: ^6.2.2
 
+  # Local Notifications
+  flutter_local_notifications: ^18.0.1
+
   # Enhanced cache management
   flutter_cache_manager: ^3.4.1
 
