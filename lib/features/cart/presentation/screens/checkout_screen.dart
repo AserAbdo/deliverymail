@@ -15,7 +15,7 @@ import '../../../../core/services/notifications_storage_service.dart';
 /// شاشة إتمام الطلب
 class CheckoutScreen extends StatefulWidget {
   final Coupon? appliedCoupon;
-  
+
   const CheckoutScreen({super.key, this.appliedCoupon});
 
   @override

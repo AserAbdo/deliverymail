@@ -21,7 +21,7 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
   String _currencySymbol = 'ل.س';
-  
+
   // Coupon variables
   final _couponController = TextEditingController();
   bool _isValidatingCoupon = false;
@@ -565,10 +565,7 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   Text(
                     'الخصم',
-                    style: GoogleFonts.cairo(
-                      fontSize: 14,
-                      color: Colors.green,
-                    ),
+                    style: GoogleFonts.cairo(fontSize: 14, color: Colors.green),
                   ),
                   Text(
                     '- ${_discount.toStringAsFixed(0)} $_currencySymbol',
@@ -613,9 +610,8 @@ class _CartScreenState extends State<CartScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CheckoutScreen(
-                        appliedCoupon: _appliedCoupon,
-                      ),
+                      builder: (context) =>
+                          CheckoutScreen(appliedCoupon: _appliedCoupon),
                     ),
                   );
                 },
