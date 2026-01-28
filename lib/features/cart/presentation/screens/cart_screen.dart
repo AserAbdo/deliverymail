@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/settings_service.dart';
+import '../../../../core/services/coupon_service.dart';
 import '../../../../core/services/order_history_service.dart';
 import '../../../../features/products/domain/entities/product.dart';
 import 'checkout_screen.dart';
@@ -20,6 +21,13 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   final CartService _cartService = CartService();
   String _currencySymbol = 'ل.س';
+  
+  // Coupon variables
+  final _couponController = TextEditingController();
+  bool _isValidatingCoupon = false;
+  Coupon? _appliedCoupon;
+  String? _couponError;
+  String? _couponSuccess;
 
   @override
   void initState() {
@@ -38,12 +46,54 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void dispose() {
     _cartService.removeListener(_onCartChanged);
+    _couponController.dispose();
     super.dispose();
   }
 
   void _onCartChanged() {
     if (mounted) setState(() {});
   }
+
+  // Coupon validation
+  Future<void> _validateCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isValidatingCoupon = true;
+      _couponError = null;
+      _couponSuccess = null;
+    });
+
+    final result = await CouponService.validateCoupon(
+      code: code,
+      subtotal: _cartService.totalPrice,
+    );
+
+    setState(() {
+      _isValidatingCoupon = false;
+      if (result.success && result.coupon != null) {
+        _appliedCoupon = result.coupon;
+        _couponSuccess = result.message;
+        _couponError = null;
+      } else {
+        _appliedCoupon = null;
+        _couponError = result.message;
+        _couponSuccess = null;
+      }
+    });
+  }
+
+  void _removeCoupon() {
+    setState(() {
+      _appliedCoupon = null;
+      _couponController.clear();
+      _couponError = null;
+      _couponSuccess = null;
+    });
+  }
+
+  double get _discount => _appliedCoupon?.discountAmount ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +130,7 @@ class _CartScreenState extends State<CartScreen> {
             : Column(
                 children: [
                   Expanded(child: _buildCartItems()),
+                  _buildCouponSection(),
                   _buildBottomBar(),
                 ],
               ),
@@ -363,6 +414,112 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  Widget _buildCouponSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'كود الخصم',
+            style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _couponController,
+                  enabled: _appliedCoupon == null,
+                  style: GoogleFonts.cairo(),
+                  decoration: InputDecoration(
+                    hintText: 'أدخل كود الخصم',
+                    hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey[300]!),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (_appliedCoupon == null)
+                ElevatedButton(
+                  onPressed: _isValidatingCoupon ? null : _validateCoupon,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isValidatingCoupon
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'تطبيق',
+                          style: GoogleFonts.cairo(color: Colors.white),
+                        ),
+                )
+              else
+                IconButton(
+                  onPressed: _removeCoupon,
+                  icon: const Icon(Icons.close, color: Colors.red),
+                ),
+            ],
+          ),
+          if (_couponError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _couponError!,
+                style: GoogleFonts.cairo(color: Colors.red, fontSize: 12),
+              ),
+            ),
+          if (_couponSuccess != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    _couponSuccess!,
+                    style: GoogleFonts.cairo(color: Colors.green, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -380,7 +537,52 @@ class _CartScreenState extends State<CartScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Summary
+            // Subtotal
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'المجموع الفرعي',
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  '${_cartService.totalPrice.toStringAsFixed(0)} $_currencySymbol',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            // Discount
+            if (_discount > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'الخصم',
+                    style: GoogleFonts.cairo(
+                      fontSize: 14,
+                      color: Colors.green,
+                    ),
+                  ),
+                  Text(
+                    '- ${_discount.toStringAsFixed(0)} $_currencySymbol',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const Divider(height: 24),
+            // Total
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -388,11 +590,12 @@ class _CartScreenState extends State<CartScreen> {
                   'الإجمالي',
                   style: GoogleFonts.cairo(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
                 ),
                 Text(
-                  '${_cartService.totalPrice.toStringAsFixed(0)} $_currencySymbol',
+                  '${(_cartService.totalPrice - _discount).toStringAsFixed(0)} $_currencySymbol',
                   style: GoogleFonts.cairo(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -410,7 +613,9 @@ class _CartScreenState extends State<CartScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const CheckoutScreen(),
+                      builder: (context) => CheckoutScreen(
+                        appliedCoupon: _appliedCoupon,
+                      ),
                     ),
                   );
                 },

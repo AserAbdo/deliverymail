@@ -14,7 +14,9 @@ import '../../../../core/services/notifications_storage_service.dart';
 /// Checkout Screen
 /// شاشة إتمام الطلب
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  final Coupon? appliedCoupon;
+  
+  const CheckoutScreen({super.key, this.appliedCoupon});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -29,24 +31,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
-  final _couponController = TextEditingController();
 
   // State
   List<Governorate> _governorates = [];
   Governorate? _selectedGovernorate;
   bool _isLoadingGovernorates = true;
-  bool _isValidatingCoupon = false;
   bool _isSubmitting = false;
   String _currencySymbol = 'ل.س';
 
   // Coupon
   Coupon? _appliedCoupon;
-  String? _couponError;
-  String? _couponSuccess;
 
   @override
   void initState() {
     super.initState();
+    _appliedCoupon = widget.appliedCoupon;
     _loadData();
     _loadSavedCheckoutData();
   }
@@ -88,7 +87,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     _notesController.dispose();
-    _couponController.dispose();
     super.dispose();
   }
 
@@ -118,44 +116,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _selectedGovernorate = matchingGovernorate;
       _currencySymbol = currencySymbol;
       _isLoadingGovernorates = false;
-    });
-  }
-
-  Future<void> _validateCoupon() async {
-    final code = _couponController.text.trim();
-    if (code.isEmpty) return;
-
-    setState(() {
-      _isValidatingCoupon = true;
-      _couponError = null;
-      _couponSuccess = null;
-    });
-
-    final result = await CouponService.validateCoupon(
-      code: code,
-      subtotal: _cartService.totalPrice,
-    );
-
-    setState(() {
-      _isValidatingCoupon = false;
-      if (result.success && result.coupon != null) {
-        _appliedCoupon = result.coupon;
-        _couponSuccess = result.message;
-        _couponError = null;
-      } else {
-        _appliedCoupon = null;
-        _couponError = result.message;
-        _couponSuccess = null;
-      }
-    });
-  }
-
-  void _removeCoupon() {
-    setState(() {
-      _appliedCoupon = null;
-      _couponController.clear();
-      _couponError = null;
-      _couponSuccess = null;
     });
   }
 
@@ -345,8 +305,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildCustomerInfoSection(),
-                      const SizedBox(height: 24),
-                      _buildCouponSection(),
                       const SizedBox(height: 24),
                       _buildOrderSummary(),
                       const SizedBox(height: 24),
@@ -543,111 +501,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCouponSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'كود الخصم',
-            style: GoogleFonts.cairo(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _couponController,
-                  enabled: _appliedCoupon == null,
-                  style: GoogleFonts.cairo(),
-                  decoration: InputDecoration(
-                    hintText: 'أدخل كود الخصم',
-                    hintStyle: GoogleFonts.cairo(color: Colors.grey[400]),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              if (_appliedCoupon == null)
-                ElevatedButton(
-                  onPressed: _isValidatingCoupon ? null : _validateCoupon,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isValidatingCoupon
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          'تطبيق',
-                          style: GoogleFonts.cairo(color: Colors.white),
-                        ),
-                )
-              else
-                IconButton(
-                  onPressed: _removeCoupon,
-                  icon: const Icon(Icons.close, color: Colors.red),
-                ),
-            ],
-          ),
-          if (_couponError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _couponError!,
-                style: GoogleFonts.cairo(color: Colors.red, fontSize: 12),
-              ),
-            ),
-          if (_couponSuccess != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    _couponSuccess!,
-                    style: GoogleFonts.cairo(color: Colors.green, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 

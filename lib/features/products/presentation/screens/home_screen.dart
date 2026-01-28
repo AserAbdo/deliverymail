@@ -252,8 +252,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     slivers: [
                       // Pinned App Bar
                       _buildSliverAppBar(),
-                      // Search Bar
-                      SliverToBoxAdapter(child: _buildSearchBar()),
+                      // Pinned Search Bar
+                      _buildSliverSearchBar(),
                       // Special Offers Section
                       SliverToBoxAdapter(child: _buildSpecialOffersSection()),
                       // Categories Section
@@ -362,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 // Notifications Icon
                 GestureDetector(
                   onTap: () {
@@ -418,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 // Governorate Selector
                 GestureDetector(
                   onTap: _showGovernorateDropdown,
@@ -486,7 +486,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 4),
                 // Logo with Two Colors
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -509,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 4),
                 // Menu Icon (opens drawer) - right/end
                 GestureDetector(
                   onTap: () => _showMenuDrawer(),
@@ -726,43 +726,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: Colors.grey[500], size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              decoration: InputDecoration(
-                hintText: 'ابحث بأي طريقة... (بحث ذكي)',
-                hintStyle: GoogleFonts.cairo(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              style: GoogleFonts.cairo(fontSize: 14),
-            ),
-          ),
-          if (_searchQuery.isNotEmpty)
-            GestureDetector(
-              onTap: _clearSearch,
-              child: Icon(Icons.clear, color: Colors.grey[600], size: 20),
-            ),
-        ],
+  /// Build Sliver Search Bar (Pinned)
+  Widget _buildSliverSearchBar() {
+    return SliverPersistentHeader(
+      pinned: true,
+      delegate: _SearchBarDelegate(
+        searchController: _searchController,
+        searchQuery: _searchQuery,
+        onClear: _clearSearch,
       ),
     );
   }
@@ -1342,26 +1313,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               : _categories.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'لا توجد تصنيفات',
-                          style: GoogleFonts.cairo(color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 120,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        itemCount: _categories.length,
-                        itemBuilder: (context, index) {
-                          return _buildCategoryCard(_categories[index]);
-                        },
-                      ),
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'لا توجد تصنيفات',
+                      style: GoogleFonts.cairo(color: Colors.grey),
                     ),
+                  ),
+                )
+              : SizedBox(
+                  height: 120,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    itemCount: _categories.length,
+                    itemBuilder: (context, index) {
+                      return _buildCategoryCard(_categories[index]);
+                    },
+                  ),
+                ),
         ],
       ),
     );
@@ -1374,31 +1345,38 @@ class _HomeScreenState extends State<HomeScreen> {
     Color backgroundColor;
 
     // Map categories to icons and colors
-    if (category.nameAr.contains('خضروات') || category.nameAr.contains('خضار')) {
+    if (category.nameAr.contains('خضروات') ||
+        category.nameAr.contains('خضار')) {
       iconData = Icons.eco; // Eco/leaf icon
       iconColor = const Color(0xFF4CAF50); // Green
       backgroundColor = const Color(0xFFE8F5E9); // Light green
-    } else if (category.nameAr.contains('فواكه') || category.nameAr.contains('فاكهة')) {
+    } else if (category.nameAr.contains('فواكه') ||
+        category.nameAr.contains('فاكهة')) {
       iconData = Icons.apple; // Apple icon
       iconColor = const Color(0xFFFF9800); // Orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
-    } else if (category.nameAr.contains('تسالي') || category.nameAr.contains('مكسرات')) {
+    } else if (category.nameAr.contains('تسالي') ||
+        category.nameAr.contains('مكسرات')) {
       iconData = Icons.cookie; // Cookie/snack icon
       iconColor = const Color(0xFFFF5722); // Deep orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
-    } else if (category.nameAr.contains('مشروبات') || category.nameAr.contains('مرطبات')) {
+    } else if (category.nameAr.contains('مشروبات') ||
+        category.nameAr.contains('مرطبات')) {
       iconData = Icons.local_drink; // Drink icon
       iconColor = const Color(0xFF00BCD4); // Cyan
       backgroundColor = const Color(0xFFE0F7FA); // Light cyan
-    } else if (category.nameAr.contains('منظفات') || category.nameAr.contains('نظافة')) {
+    } else if (category.nameAr.contains('منظفات') ||
+        category.nameAr.contains('نظافة')) {
       iconData = Icons.cleaning_services; // Cleaning icon
       iconColor = const Color(0xFF2196F3); // Blue
       backgroundColor = const Color(0xFFE3F2FD); // Light blue
-    } else if (category.nameAr.contains('غذائية') || category.nameAr.contains('طعام')) {
+    } else if (category.nameAr.contains('غذائية') ||
+        category.nameAr.contains('طعام')) {
       iconData = Icons.restaurant; // Restaurant icon
       iconColor = const Color(0xFFFF9800); // Orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
-    } else if (category.nameAr.contains('لحوم') || category.nameAr.contains('دجاج')) {
+    } else if (category.nameAr.contains('لحوم') ||
+        category.nameAr.contains('دجاج')) {
       iconData = Icons.set_meal; // Meat icon
       iconColor = const Color(0xFFE91E63); // Pink
       backgroundColor = const Color(0xFFFCE4EC); // Light pink
@@ -1450,9 +1428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: backgroundColor,
                 shape: BoxShape.circle,
               ),
-              child: Center(
-                child: Icon(iconData, color: iconColor, size: 26),
-              ),
+              child: Center(child: Icon(iconData, color: iconColor, size: 26)),
             ),
             const SizedBox(height: 8),
             // Category name
@@ -1799,5 +1775,78 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Search Bar Delegate for Pinned Header
+class _SearchBarDelegate extends SliverPersistentHeaderDelegate {
+  final TextEditingController searchController;
+  final String searchQuery;
+  final VoidCallback onClear;
+
+  _SearchBarDelegate({
+    required this.searchController,
+    required this.searchQuery,
+    required this.onClear,
+  });
+
+  @override
+  double get minExtent => 70;
+
+  @override
+  double get maxExtent => 70;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: Colors.grey[500], size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.right,
+                decoration: InputDecoration(
+                  hintText: 'ابحث بأي طريقة... (بحث ذكي)',
+                  hintStyle: GoogleFonts.cairo(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                style: GoogleFonts.cairo(fontSize: 14),
+              ),
+            ),
+            if (searchQuery.isNotEmpty)
+              GestureDetector(
+                onTap: onClear,
+                child: Icon(Icons.clear, color: Colors.grey[600], size: 20),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SearchBarDelegate oldDelegate) {
+    return searchQuery != oldDelegate.searchQuery;
   }
 }
