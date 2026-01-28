@@ -487,14 +487,27 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(),
-                // Logo with Dark Blue Color
-                Text(
-                  'دليفري مول',
-                  style: GoogleFonts.cairo(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF003366), // Dark blue
-                  ),
+                // Logo with Two Colors
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'دليفري',
+                      style: GoogleFonts.cairo(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF003366), // Dark blue
+                      ),
+                    ),
+                    Text(
+                      ' مول',
+                      style: GoogleFonts.cairo(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryGreen, // Green
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 10),
                 // Menu Icon (opens drawer) - right/end
@@ -1308,11 +1321,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Title
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             child: Text(
               'التصنيفات',
               style: GoogleFonts.cairo(
@@ -1322,131 +1335,139 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Categories Row
+          // Categories Scrollable Grid
           _isLoadingCategories
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    3,
-                    (index) => Expanded(child: ShimmerLoading.categoryCard()),
-                  ),
+              ? SizedBox(
+                  height: 120,
+                  child: Center(child: CircularProgressIndicator()),
                 )
               : _categories.isEmpty
-              ? Center(
-                  child: Text(
-                    'لا توجد تصنيفات',
-                    style: GoogleFonts.cairo(color: Colors.grey),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _categories
-                      .take(3)
-                      .map((cat) => _buildCategoryCard(cat))
-                      .toList(),
-                ),
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          'لا توجد تصنيفات',
+                          style: GoogleFonts.cairo(color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        itemCount: _categories.length,
+                        itemBuilder: (context, index) {
+                          return _buildCategoryCard(_categories[index]);
+                        },
+                      ),
+                    ),
         ],
       ),
     );
   }
 
   Widget _buildCategoryCard(Category category) {
-    // Check if this is vegetables category (handles both spellings: الخضروات and الخصروات)
-    final bool isVegetables =
-        category.nameAr.contains('خضروات') ||
-        category.nameAr.contains('خصروات');
-
     // Icon and colors based on category name
-    IconData iconData = Icons.eco;
-    Color iconColor = const Color(0xFF4CAF50);
-    Color backgroundColor = const Color(0xFFE8F5E9);
+    IconData iconData;
+    Color iconColor;
+    Color backgroundColor;
 
-    // Vegetables & Fruits - Beautiful icons with matching colors
-    if (isVegetables) {
-      iconData = Icons.eco; // Eco/leaf icon - matches the design
+    // Map categories to icons and colors
+    if (category.nameAr.contains('خضروات') || category.nameAr.contains('خضار')) {
+      iconData = Icons.eco; // Eco/leaf icon
       iconColor = const Color(0xFF4CAF50); // Green
       backgroundColor = const Color(0xFFE8F5E9); // Light green
-    } else if (category.nameAr.contains('فواكه') ||
-        category.nameAr.contains('فاكهة')) {
-      iconData = Icons.apple; // Apple icon for fruits
+    } else if (category.nameAr.contains('فواكه') || category.nameAr.contains('فاكهة')) {
+      iconData = Icons.apple; // Apple icon
       iconColor = const Color(0xFFFF9800); // Orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
-    } else if (category.nameAr.contains('غذائية') ||
-        category.nameAr.contains('طعام')) {
-      iconData = Icons.shopping_basket; // Basket icon
-      iconColor = const Color(0xFFFF9800); // Orange
+    } else if (category.nameAr.contains('تسالي') || category.nameAr.contains('مكسرات')) {
+      iconData = Icons.cookie; // Cookie/snack icon
+      iconColor = const Color(0xFFFF5722); // Deep orange
       backgroundColor = const Color(0xFFFFE0B2); // Light orange
-    } else if (category.nameAr.contains('منظفات') ||
-        category.nameAr.contains('شخصية')) {
+    } else if (category.nameAr.contains('مشروبات') || category.nameAr.contains('مرطبات')) {
+      iconData = Icons.local_drink; // Drink icon
+      iconColor = const Color(0xFF00BCD4); // Cyan
+      backgroundColor = const Color(0xFFE0F7FA); // Light cyan
+    } else if (category.nameAr.contains('منظفات') || category.nameAr.contains('نظافة')) {
       iconData = Icons.cleaning_services; // Cleaning icon
       iconColor = const Color(0xFF2196F3); // Blue
       backgroundColor = const Color(0xFFE3F2FD); // Light blue
-    } else if (category.nameAr.contains('لحوم') ||
-        category.nameAr.contains('دجاج')) {
+    } else if (category.nameAr.contains('غذائية') || category.nameAr.contains('طعام')) {
+      iconData = Icons.restaurant; // Restaurant icon
+      iconColor = const Color(0xFFFF9800); // Orange
+      backgroundColor = const Color(0xFFFFE0B2); // Light orange
+    } else if (category.nameAr.contains('لحوم') || category.nameAr.contains('دجاج')) {
       iconData = Icons.set_meal; // Meat icon
       iconColor = const Color(0xFFE91E63); // Pink
       backgroundColor = const Color(0xFFFCE4EC); // Light pink
+    } else {
+      // Default icon
+      iconData = Icons.category;
+      iconColor = const Color(0xFF9C27B0); // Purple
+      backgroundColor = const Color(0xFFF3E5F5); // Light purple
     }
 
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          // Navigate to category products screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CategoryProductsScreen(
-                categoryId: category.id,
-                categoryName: category.nameAr,
-                subcategories: category.children,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to category products screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CategoryProductsScreen(
+              categoryId: category.id,
+              categoryName: category.nameAr,
+              subcategories: category.children,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon container with colored background
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(iconData, color: iconColor, size: 26),
               ),
             ),
-          );
-        },
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+            const SizedBox(height: 8),
+            // Category name
+            Text(
+              category.nameAr,
+              style: GoogleFonts.cairo(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[800],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icon container with colored background
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(iconData, color: iconColor, size: 28),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Category name
-              Text(
-                category.nameAr,
-                style: GoogleFonts.cairo(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
