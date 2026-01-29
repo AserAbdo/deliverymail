@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Gradient Text Widget - دليفري مول Brand Style
-/// ويدجت النص المتدرج - بنمط علامة دليفري مول التجارية
+/// Gradient Text Widget - ديلفري مول Brand Style
+/// ويدجت النص المتدرج - بنمط علامة ديلفري مول التجارية
 class GradientText extends StatelessWidget {
   final String text;
   final double fontSize;
@@ -41,8 +41,8 @@ class GradientText extends StatelessWidget {
   }
 }
 
-/// Brand Logo Text - "دليفري مول" with gradient
-/// نص الشعار التجاري - "دليفري مول" مع التدرج
+/// Brand Logo Text - "ديلفري مول" with gradient
+/// نص الشعار التجاري - "ديلفري مول" مع التدرج
 class BrandLogoText extends StatelessWidget {
   final double fontSize;
 
@@ -51,7 +51,7 @@ class BrandLogoText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GradientText(
-      text: 'دليفري مول',
+      text: 'ديلفري مول',
       fontSize: fontSize,
       fontWeight: FontWeight.bold,
     );

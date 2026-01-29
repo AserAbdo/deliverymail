@@ -508,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'دليفري',
+                      'ديلفري',
                       style: GoogleFonts.cairo(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -583,7 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'دليفري مول',
+                      'ديلفري مول',
                       style: GoogleFonts.cairo(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -592,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'دليفري مول هو رفيقك الأول للتسوق في سوريا.\nنوفر لك أجود أنواع الخضار، الفواكه، والمنظفات\nبأسعار منافسة وتوصيل سريع إلى باب منزلك.',
+                      'ديلفري مول هو رفيقك الأول للتسوق في سوريا.\nنوفر لك أجود أنواع الخضار، الفواكه، والمنظفات\nبأسعار منافسة وتوصيل سريع إلى باب منزلك.',
                       style: GoogleFonts.cairo(
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.9),

@@ -45,7 +45,7 @@ class KhodargyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'دليفري مول - متجر الخضار والفواكه',
+      title: 'ديلفري مول - متجر الخضار والفواكه',
       debugShowCheckedModeBanner: false,
 
       // RTL support for Arabic
