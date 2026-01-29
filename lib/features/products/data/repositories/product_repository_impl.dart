@@ -17,6 +17,7 @@ class ProductRepositoryImpl implements ProductRepository {
     int page = 1,
     int perPage = 15,
     int? categoryId,
+    int? governorateId,
     String? search,
     double? minPrice,
     double? maxPrice,
@@ -26,6 +27,7 @@ class ProductRepositoryImpl implements ProductRepository {
         page: page,
         perPage: perPage,
         categoryId: categoryId,
+        governorateId: governorateId,
         search: search,
         minPrice: minPrice,
         maxPrice: maxPrice,
@@ -51,9 +53,15 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<Either<Failure, List<Product>>> searchProducts(String query) async {
+  Future<Either<Failure, List<Product>>> searchProducts(
+    String query, {
+    int? governorateId,
+  }) async {
     try {
-      final products = await remoteDataSource.searchProducts(query);
+      final products = await remoteDataSource.searchProducts(
+        query,
+        governorateId: governorateId,
+      );
       return Right(products);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
@@ -64,10 +72,14 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<Either<Failure, List<Product>>> getProductsByCategory(
-    int categoryId,
-  ) async {
+    int categoryId, {
+    int? governorateId,
+  }) async {
     try {
-      final products = await remoteDataSource.getProductsByCategory(categoryId);
+      final products = await remoteDataSource.getProductsByCategory(
+        categoryId,
+        governorateId: governorateId,
+      );
       return Right(products);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

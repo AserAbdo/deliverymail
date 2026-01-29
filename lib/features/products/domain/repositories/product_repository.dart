@@ -9,6 +9,7 @@ abstract class ProductRepository {
     int page = 1,
     int perPage = 15,
     int? categoryId,
+    int? governorateId,
     String? search,
     double? minPrice,
     double? maxPrice,
@@ -16,7 +17,13 @@ abstract class ProductRepository {
 
   Future<Either<Failure, Product>> getProductDetails(String productId);
 
-  Future<Either<Failure, List<Product>>> searchProducts(String query);
+  Future<Either<Failure, List<Product>>> searchProducts(
+    String query, {
+    int? governorateId,
+  });
 
-  Future<Either<Failure, List<Product>>> getProductsByCategory(int categoryId);
+  Future<Either<Failure, List<Product>>> getProductsByCategory(
+    int categoryId, {
+    int? governorateId,
+  });
 }

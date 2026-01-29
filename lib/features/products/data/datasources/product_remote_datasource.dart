@@ -10,14 +10,18 @@ abstract class ProductRemoteDataSource {
     int page = 1,
     int perPage = 15,
     int? categoryId,
+    int? governorateId,
     String? search,
     double? minPrice,
     double? maxPrice,
   });
 
   Future<ProductModel> getProductDetails(String productId);
-  Future<List<ProductModel>> searchProducts(String query);
-  Future<List<ProductModel>> getProductsByCategory(int categoryId);
+  Future<List<ProductModel>> searchProducts(String query, {int? governorateId});
+  Future<List<ProductModel>> getProductsByCategory(
+    int categoryId, {
+    int? governorateId,
+  });
 }
 
 /// Implementation of ProductRemoteDataSource
@@ -31,6 +35,7 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
     int page = 1,
     int perPage = 15,
     int? categoryId,
+    int? governorateId,
     String? search,
     double? minPrice,
     double? maxPrice,
@@ -44,6 +49,9 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
 
       if (categoryId != null) {
         queryParams['category_id'] = categoryId.toString();
+      }
+      if (governorateId != null) {
+        queryParams['governorate_id'] = governorateId.toString();
       }
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (minPrice != null) queryParams['min_price'] = minPrice.toString();
@@ -109,12 +117,18 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   }
 
   @override
-  Future<List<ProductModel>> searchProducts(String query) async {
-    return getProducts(search: query);
+  Future<List<ProductModel>> searchProducts(
+    String query, {
+    int? governorateId,
+  }) async {
+    return getProducts(search: query, governorateId: governorateId);
   }
 
   @override
-  Future<List<ProductModel>> getProductsByCategory(int categoryId) async {
-    return getProducts(categoryId: categoryId);
+  Future<List<ProductModel>> getProductsByCategory(
+    int categoryId, {
+    int? governorateId,
+  }) async {
+    return getProducts(categoryId: categoryId, governorateId: governorateId);
   }
 }

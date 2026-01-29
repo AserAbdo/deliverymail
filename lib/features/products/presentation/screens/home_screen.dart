@@ -100,11 +100,23 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
+      // If no saved governorate, select the first one by default
+      if (selected == null && governorates.isNotEmpty) {
+        selected = governorates.first;
+        // Save it as default
+        await GovernoratesService.saveSelectedGovernorate(selected);
+      }
+
       if (mounted) {
         setState(() {
           _governorates = governorates;
           _selectedGovernorate = selected;
         });
+
+        // Reload products with the selected governorate
+        if (_productsCubit != null && selected != null) {
+          _productsCubit!.loadProducts(governorateId: selected.id);
+        }
       }
     } catch (e) {
       // Error loading governorates
@@ -199,7 +211,10 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _showSearchSuggestions = true;
       });
-      _searchCubit!.searchProducts(_searchQuery);
+      _searchCubit!.searchProducts(
+        _searchQuery,
+        governorateId: _selectedGovernorate?.id,
+      );
     }
   }
 
@@ -237,7 +252,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return BlocProvider(
       create: (_) {
-        _productsCubit = di.sl<ProductsCubit>()..loadProducts();
+        _productsCubit = di.sl<ProductsCubit>()
+          ..loadProducts(governorateId: _selectedGovernorate?.id);
         return _productsCubit!;
       },
       child: Builder(
@@ -1060,6 +1076,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               _selectedGovernorate = gov;
                             });
 
+                            // Reload products with new governorate
+                            if (_productsCubit != null) {
+                              _productsCubit!.loadProducts(
+                                governorateId: gov.id,
+                              );
+                            }
+
                             if (mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1322,15 +1345,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 )
-              : SizedBox(
-                  height: 120,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    itemCount: _categories.length,
-                    itemBuilder: (context, index) {
-                      return _buildCategoryCard(_categories[index]);
-                    },
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Wrap(
+                    spacing: 12, // Horizontal space between items
+                    runSpacing: 12, // Vertical space between rows
+                    alignment: WrapAlignment.start,
+                    children: _categories.map((category) {
+                      return _buildCategoryCard(category);
+                    }).toList(),
                   ),
                 ),
         ],
@@ -1339,6 +1362,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryCard(Category category) {
+    // Calculate card width based on screen size to fit 3 cards per row
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = 16.0; // 8px on each side from Container padding
+    final wrapSpacing = 12.0; // spacing between items in Wrap
+    final availableWidth = screenWidth - (horizontalPadding * 2);
+    // Calculate width for 3 items with 2 gaps
+    final cardWidth = (availableWidth - (wrapSpacing * 2)) / 3;
+
     // Icon and colors based on category name
     IconData iconData;
     Color iconColor;
@@ -1402,8 +1433,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Container(
-        width: 100,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
+        width: cardWidth,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,

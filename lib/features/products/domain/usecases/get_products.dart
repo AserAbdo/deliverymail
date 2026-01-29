@@ -12,6 +12,7 @@ class GetProducts {
 
   Future<Either<Failure, List<Product>>> call({
     int? categoryId,
+    int? governorateId,
     String? search,
     double? minPrice,
     double? maxPrice,
@@ -20,6 +21,7 @@ class GetProducts {
   }) async {
     return await repository.getProducts(
       categoryId: categoryId,
+      governorateId: governorateId,
       search: search,
       minPrice: minPrice,
       maxPrice: maxPrice,

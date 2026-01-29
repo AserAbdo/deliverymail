@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/cart_service.dart';
 import '../../../../core/services/categories_service.dart';
+import '../../../../core/services/governorates_service.dart';
 import '../cubit/products_cubit.dart';
 import '../cubit/products_state.dart';
 import '../../domain/entities/product.dart';
@@ -33,11 +34,24 @@ class CategoryProductsScreen extends StatefulWidget {
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   final CartService _cartService = CartService();
   int? _selectedSubcategoryId;
+  Governorate? _selectedGovernorate;
+  bool _isLoadingGovernorate = true;
 
   @override
   void initState() {
     super.initState();
     _cartService.addListener(_onCartChanged);
+    _loadSelectedGovernorate();
+  }
+
+  Future<void> _loadSelectedGovernorate() async {
+    final governorate = await GovernoratesService.getSelectedGovernorate();
+    if (mounted) {
+      setState(() {
+        _selectedGovernorate = governorate;
+        _isLoadingGovernorate = false;
+      });
+    }
   }
 
   void _onCartChanged() {
@@ -59,10 +73,16 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       ),
     );
 
+    // Wait for governorate to load
+    if (_isLoadingGovernorate) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return BlocProvider(
       create: (_) => di.sl<ProductsCubit>()
         ..loadProducts(
           categoryId: _selectedSubcategoryId ?? widget.categoryId,
+          governorateId: _selectedGovernorate?.id,
         ),
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -157,6 +177,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                       });
                       productsCubit.loadProducts(
                         categoryId: widget.categoryId,
+                        governorateId: _selectedGovernorate?.id,
                       );
                     },
                   ),
@@ -174,6 +195,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                           });
                           productsCubit.loadProducts(
                             categoryId: subcat.id,
+                            governorateId: _selectedGovernorate?.id,
                           );
                         },
                       ),
@@ -346,6 +368,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             onPressed: () {
               context.read<ProductsCubit>().loadProducts(
                 categoryId: widget.categoryId,
+                governorateId: _selectedGovernorate?.id,
               );
             },
             icon: const Icon(Icons.refresh),

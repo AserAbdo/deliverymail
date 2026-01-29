@@ -9,10 +9,11 @@ class ProductsCubit extends Cubit<ProductsState> {
 
   ProductsCubit({required this.getProducts}) : super(ProductsInitial());
 
-  /// Load all products (optionally filtered by category)
-  /// تحميل جميع المنتجات (اختياريًا حسب الفئة)
+  /// Load all products (optionally filtered by category and governorate)
+  /// تحميل جميع المنتجات (اختياريًا حسب الفئة والمحافظة)
   Future<void> loadProducts({
     int? categoryId,
+    int? governorateId,
     int page = 1,
     int perPage = 100,
   }) async {
@@ -21,6 +22,7 @@ class ProductsCubit extends Cubit<ProductsState> {
     try {
       final result = await getProducts(
         categoryId: categoryId,
+        governorateId: governorateId,
         page: page,
         perPage: perPage,
       );
@@ -49,11 +51,15 @@ class ProductsCubit extends Cubit<ProductsState> {
 
   /// Filter products by category
   /// تصفية المنتجات حسب الفئة
-  Future<void> filterByCategory(int? categoryId) async {
+  Future<void> filterByCategory(int? categoryId, {int? governorateId}) async {
     emit(ProductsLoading());
 
     try {
-      final result = await getProducts(categoryId: categoryId, perPage: 100);
+      final result = await getProducts(
+        categoryId: categoryId,
+        governorateId: governorateId,
+        perPage: 100,
+      );
 
       result.fold((failure) => emit(ProductsError(failure.message)), (
         products,
@@ -73,16 +79,20 @@ class ProductsCubit extends Cubit<ProductsState> {
 
   /// Search products
   /// البحث عن المنتجات
-  Future<void> searchProducts(String query) async {
+  Future<void> searchProducts(String query, {int? governorateId}) async {
     if (query.isEmpty) {
-      loadProducts();
+      loadProducts(governorateId: governorateId);
       return;
     }
 
     emit(ProductsLoading());
 
     try {
-      final result = await getProducts(search: query, perPage: 100);
+      final result = await getProducts(
+        search: query,
+        governorateId: governorateId,
+        perPage: 100,
+      );
 
       result.fold((failure) => emit(ProductsError(failure.message)), (
         products,
